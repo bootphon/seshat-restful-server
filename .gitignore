@@ -1,0 +1,6 @@
+data/
+.ideal/
+error.log
+credentials.json
+logs/
+db_backup

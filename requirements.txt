@@ -1,0 +1,8 @@
+flask-rest-api
+tgt 
+mongoengine
+python-slugify
+ffmpeg-python
+dateutils
+unidecode
+flask-cors

@@ -1,0 +1,61 @@
+from os import environ
+
+
+class BaseConfig:
+
+    MAILING_ACCOUNT0_ADDRESS = "seshat@hadware.ovh"
+    MAILING_ACCOUNT0_PASSWORD = "seshatandthoth"
+    SMTP_SERVER_ADDRESS = "SSL0.OVH.NET"
+    SMTP_SERVER_PORT = 587
+
+
+
+class DebugConfig(BaseConfig):
+    """Debug Flask Config """
+
+    # Db Settings
+    MONGODB_SETTINGS = {
+        'db': 'seshat_api_dev',
+        'host': '127.0.0.1',
+        'port': 27017}
+
+    # Flask settings
+    SECRET_KEY = 'Seshat'
+    DEBUG = True
+
+    #network sertings
+    HOST = "0.0.0.0"
+    PORT = 5000
+
+    # Flask-User settings
+    USER_APP_NAME = "Seshat API Debug"      # Shown in and email templates and page footers
+
+
+    # Audio campaign files folder
+    CAMPAIGNS_FILES_ROOT = "data/"
+
+    LOGS_FOLDER = "logs/"
+
+
+class ProductionConfig(BaseConfig):
+    # Flask settings
+    SECRET_KEY = 'Seshat API production'
+    DEBUG = False
+
+    # network settings
+    HOST = "127.0.0.1"
+    PORT = 5000
+
+    # Flask-User settings
+    USER_APP_NAME = "Seshat"  # Shown in and email templates and page footers
+    # Db Settings
+    MONGODB_SETTINGS = {
+        'db': 'seshat_api_prod',
+        'host': '127.0.0.1',
+        'port': 27017}
+
+
+    # Audio campaign files folder
+    CAMPAIGNS_FILES_ROOT = "data/"
+
+    LOGS_FOLDER = "logs/"
