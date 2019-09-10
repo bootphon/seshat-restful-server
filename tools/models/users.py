@@ -2,10 +2,9 @@ import hashlib
 import os
 from datetime import datetime
 
-from flask_user import UserMixin
 from mongoengine import Document, BooleanField, StringField, ListField, \
-    ReferenceField, DoesNotExist, DateTimeField, EmbeddedDocument, EmailField, \
-    EmbeddedDocumentListField, PULL
+    ReferenceField, DoesNotExist, DateTimeField, EmailField, \
+    PULL
 
 from tools.models.commons import DBError
 
@@ -30,7 +29,7 @@ class Notification(Document):
         return self.ICON_MAPPING[self.notif_type]
 
 
-class User(UserMixin, Document):
+class User(Document):
     meta = {'allow_inheritance': True}
     active = BooleanField(default=True, required=True)
 
@@ -38,6 +37,7 @@ class User(UserMixin, Document):
     username = StringField(required=True, primary_key=True)
     salted_password_hash = StringField(required=True)
     salt = StringField(required=True)
+    # TODO : figure out robust token system
 
     # User information
     first_name = StringField(default="Prénom")
@@ -57,6 +57,9 @@ class User(UserMixin, Document):
                                         100000).hex()
         return self.salted_password_hash == pass_hash
 
+    def check_token(self, token: str):
+        pass
+
     @staticmethod
     def create_password_hash(password: str):
         salt = os.urandom(16).hex()
@@ -65,9 +68,6 @@ class User(UserMixin, Document):
                                         salt.encode(),
                                         100000).hex()
         return pass_hash, salt
-
-    def get_id(self):
-        return self.username
 
 
 class Admin(User):

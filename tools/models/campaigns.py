@@ -24,9 +24,9 @@ class Campaign(Document):
     description = StringField()
     creator = ReferenceField('Admin', required=True)
     subscribers = ListField(ReferenceField('Admin'))
-    annotators = ListField(ReferenceField('Annotator'))
     creation_time = DateTimeField(default=datetime.now)
     last_update = DateTimeField(default=datetime.now)
+    wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
     files_folder_path = StringField(required=True)
 

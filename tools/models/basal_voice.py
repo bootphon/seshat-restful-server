@@ -23,14 +23,9 @@ from tools.utils import tg_to_str, open_str_textgrid
 
 
 class BasalVoiceTask(BaseTask):
-    # Only contains one Tier ("Task")  of the audio file's lenth
+    # Only contains one Tier ("Task")  of the audio file's length
     # with nothing in it.
     template_tg = StringField(required=True)
-    # only contains one tier with the annotated tasks
-    tasks_tg = StringField()
-    # only the Task Tier is annotated, all other tiers are semi-empty
-    # (only contain END,BEGIN, and delimiters for Tasks)
-    tasks_template_tg = StringField()
     # the final annotated file, with 4 tiers
     final_tg = StringField()
 

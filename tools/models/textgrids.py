@@ -63,7 +63,7 @@ class DoubleAnnotatorTextGrid(BaseTextGridDocument):
     target = ReferenceField('Annotator')
 
 
-class MergedAnnotsBasalVoiceTextGrid(DoubleAnnotatorTextGrid):
+class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
     """Used to to check the double-stacked merged annotations textgrid.
         Runs the regular annotation checks, but also checks annotations are
         well aligned between corresponding ref and target tiers"""
@@ -97,7 +97,7 @@ class Frontier:
         self.right.minTime = mean
 
 
-class MergedTimesBasalVoiceTextGrid(MergedAnnotsBasalVoiceTextGrid):
+class MergedTimesTextGrid(MergedAnnotsTextGrid):
     """Checks that times can be safely merged between the two TextGrids,
         on top of all the inherited checks"""
 
