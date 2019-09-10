@@ -5,13 +5,22 @@ analytics_blp = Blueprint("analytics", __name__, url_prefix="analytics/",
                           description="Operations to display and compute analytics on campaigns")
 
 
+@analytics_blp.route("basic/<campain_slug>")
 class GetBaseAdminStatisticsHandler(AdminMethodView):
-    pass
+
+    def get(self, campain_slug: str):
+        pass
 
 
+@analytics_blp.route("completed/<campain_slug>")
 class GetCompletedFiles(AdminMethodView):
-    pass
+
+    def get(self, campain_slug: str):
+        pass
 
 
+@analytics_blp.route("gamma")
 class ComputeFilesetGamma(AdminMethodView):
-    pass
+
+    def post(self):
+        pass

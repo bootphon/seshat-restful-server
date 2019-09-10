@@ -7,6 +7,12 @@ class BaseConfig:
     MAILING_ACCOUNT0_PASSWORD = "seshatandthoth"
     SMTP_SERVER_ADDRESS = "SSL0.OVH.NET"
     SMTP_SERVER_PORT = 587
+    OPENAPI_VERSION = "3.0.2"
+    OPENAPI_URL_PREFIX = '/doc'
+    OPENAPI_REDOC_PATH = '/redoc'
+    OPENAPI_SWAGGER_UI_PATH = '/swagger'
+    # The following is equivalent to OPENAPI_SWAGGER_UI_VERSION = '3.19.5'
+    OPENAPI_SWAGGER_UI_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.19.5/'
 
 
 

@@ -7,21 +7,31 @@ users_blp = Blueprint("users", __name__, url_prefix="users/",
                       description="Users administration and creation")
 
 
-class CreateAnnotatorHandler(AdminMethodView):
-    pass
+@users_blp.route("manage")
+class ManageAnnotatorHandler(AdminMethodView):
+
+    def post(self):
+        """Adds a new user"""
+        pass
+
+    def delete(self):
+        """Deletes an existing user"""
+        pass
+
+    def put(self):
+        """Updates an existing user"""
+        pass
 
 
-class EditAnnotatorHandler(AdminMethodView):
-    pass
-
-
-class DeleteAnnotatorHandler(AdminMethodView):
-    pass
-
-
+@users_blp.route("lock")
 class LockAnnotatorHandler(AdminMethodView):
-    pass
+
+    def post(self):
+        pass
 
 
+@users_blp.route("list")
 class ListAnnotatorsHandler(AdminMethodView):
-    pass
+
+    def get(self):
+        pass

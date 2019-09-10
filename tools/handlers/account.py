@@ -6,9 +6,15 @@ accounts_blp = Blueprint("accounts", __name__, url_prefix="accounts/",
                          description="Login/logout operations")
 
 
+@accounts_blp.route("login")
 class LoginHandler(MethodView):
-    pass
+
+    def post(self):
+        pass
 
 
+@accounts_blp.route("logout")
 class LogoutHandler(LoggedInMethodView):
-    pass
+
+    def get(self):
+        pass
