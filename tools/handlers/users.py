@@ -3,11 +3,11 @@ from .commons import LoggedInMethodView
 from flask_rest_api import Blueprint
 
 
-users_blp = Blueprint("users", __name__, url_prefix="users/",
+users_blp = Blueprint("users", __name__, url_prefix="/users",
                       description="Users administration and creation")
 
 
-@users_blp.route("manage")
+@users_blp.route("/manage")
 class ManageAnnotatorHandler(AdminMethodView):
 
     def post(self):
@@ -23,14 +23,14 @@ class ManageAnnotatorHandler(AdminMethodView):
         pass
 
 
-@users_blp.route("lock")
+@users_blp.route("/lock")
 class LockAnnotatorHandler(AdminMethodView):
 
     def post(self):
         pass
 
 
-@users_blp.route("list")
+@users_blp.route("/list")
 class ListAnnotatorsHandler(AdminMethodView):
 
     def get(self):

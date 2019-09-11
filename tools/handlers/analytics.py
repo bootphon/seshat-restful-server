@@ -1,25 +1,25 @@
 from .commons import AdminMethodView
 from flask_rest_api import Blueprint
 
-analytics_blp = Blueprint("analytics", __name__, url_prefix="analytics/",
+analytics_blp = Blueprint("analytics", __name__, url_prefix="/analytics",
                           description="Operations to display and compute analytics on campaigns")
 
 
-@analytics_blp.route("basic/<campain_slug>")
+@analytics_blp.route("/basic/<campain_slug>")
 class GetBaseAdminStatisticsHandler(AdminMethodView):
 
     def get(self, campain_slug: str):
         pass
 
 
-@analytics_blp.route("completed/<campain_slug>")
+@analytics_blp.route("/completed/<campain_slug>")
 class GetCompletedFiles(AdminMethodView):
 
     def get(self, campain_slug: str):
         pass
 
 
-@analytics_blp.route("gamma")
+@analytics_blp.route("/gamma")
 class ComputeFilesetGamma(AdminMethodView):
 
     def post(self):
