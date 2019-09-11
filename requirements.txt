@@ -6,4 +6,3 @@ ffmpeg-python
 dateutils
 unidecode
 flask-cors
-marshmallow-mongoengine

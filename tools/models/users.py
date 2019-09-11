@@ -76,7 +76,6 @@ class Admin(User):
 
 class Annotator(User):
     creation_time = DateTimeField(default=datetime.now)
-    assigned_campaign = ReferenceField('Campaign')
     assigned_tasks = ListField(ReferenceField('BaseTask'))
 
     stats = None
