@@ -6,11 +6,12 @@ from flask import url_for
 from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
+                         FloatField,IntField,EmbeddedDocumentField,
                          PULL, ListField, DictField, OperationError)
 
 from tools.models.commons import notif_dispatch
-from tools.textgrid_checking.common import TextGridError
-
+from .errors import TextGridError
+from datetime import date
 
 class TaskComment(EmbeddedDocument):
     author = ReferenceField('User', required=True)
@@ -336,37 +337,6 @@ class DoubleAnnotatorTask(BaseTask):
     merged_times_tg = StringField()
     # times conflicts could all be merged, this is a regular 4-tier textgrid
     final_tg = StringField()
-
-    WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS = \
-        """Attends que l'annotatrice dite '%s' termine son travail d'annotation 
-        pour poursuivre."""
-
-    WAIT_FOR_REF_INSTRUCTIONS = \
-        """L'annotatrice référence doit d'abord faire l'annotation des tâches 
-        des base. Il faut attendre qu'elle ait terminé pour commencer."""
-
-    REF_MERGE_ANNOTS_INSTRUCTIONS = \
-        """Il faut maintenant que l'annotatrice dite 'target' te rejoigne pour 
-        que vous puissiez vous mettre  d'accord sur le contenu des annotations 
-        et sur leur nombre. L'objectif est d'avoir, pour tout les Tiers, 
-        le même nombre d'annotations avec la même valeur."""
-
-    TARGET_MERGE_ANNOTS_INSTRUCTIONS = \
-        """Rejoins maintenant l'annotatrice référence pour pouvoir, ensemble, 
-        se mettre d'accord sur vos annotations respectives. La fusion 
-        se fait sur sa machine."""
-
-    REF_MERGE_TIMES_INSTRUCTIONS = \
-        """Toujours ensemble avec l'annotatrice target, vous devez faire en 
-        sorte que les frontières qui n'ont pas pu être fusionnées 
-        (indiquées ci-dessous) soient plus proches (%ims).""" \
-        % int(MergedTimesTextGridChecker.DIFF_THRESHOLD * 1000)
-
-    TARGET_MERGE_TIMES_INSTRUCTIONS = \
-        """Rejoins maintenant l'annotatrice référence pour pouvoir, 
-        ensemble, terminer la fusion des temps. La fusion se fait sur sa 
-        machine. Pour que tu puisses l'aider, les frontières à fusionner sont 
-        listées ci-dessous. La fusions se fait sur sa machine."""
 
     @property
     def status(self):

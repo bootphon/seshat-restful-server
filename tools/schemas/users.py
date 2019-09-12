@@ -1,28 +1,39 @@
 from marshmallow import Schema, fields
-from ..models import Annotator
+
 from .tasks import TaskShort
 
 
 class LoginCredentials(Schema):
-    pass
+    username = fields.Str(required=True)
+    password = fields.String(required=True)
 
 
 class ConnectionCredentials(Schema):
-    pass
+    username = fields.Str(required=True)
+    token = fields.Str(required=True)
 
 
 class AnnotatorCreation(Schema):
-    pass
+    firstname = fields.Str(required=True)
+    lastname = fields.Str(required=True)
+    password = fields.Str(required=True)
+    email = fields.Email(required=True)
 
 
 class AnnotatorDeletion(Schema):
-    pass
+    username = fields.Str(required=True)
 
 
 class AnnotatorShortProfile(Schema):
-    pass
+    fullname = fields.Str(required=True)
+    username = fields.Str(required=True)
+    last_activity = fields.DateTime(required=True)
+    assigned_tasks = fields.Int(required=True)
+    active_tasks = fields.Int(required=True)
+    finished_tasks = fields.Int(required=True)
 
 
 class AnnotatorFullProfile(AnnotatorShortProfile):
-
+    email = fields.Str(required=True)
+    creation_date = fields.Date(required=True)
     tasks = fields.List(fields.Nested(TaskShort))

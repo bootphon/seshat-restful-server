@@ -6,3 +6,4 @@ ffmpeg-python
 dateutils
 unidecode
 flask-cors
+numpy
