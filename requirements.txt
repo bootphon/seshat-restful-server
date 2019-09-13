@@ -7,3 +7,5 @@ dateutils
 unidecode
 flask-cors
 numpy
+marshmallow_enum
+marshmallow

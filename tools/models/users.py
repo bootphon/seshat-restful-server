@@ -11,7 +11,6 @@ from tools.models.commons import DBError
 
 class Notification(Document):
     time = DateTimeField(default=datetime.now)
-    url = StringField(required=True)
     message = StringField(required=True)
     notif_type = StringField(required=True,
                              choices=["assignment", "comment",
@@ -37,7 +36,7 @@ class User(Document):
     username = StringField(required=True, primary_key=True)
     salted_password_hash = StringField(required=True)
     salt = StringField(required=True)
-    # TODO : figure out robust token system
+    active_tokens = ListField(StringField())
 
     # User information
     first_name = StringField(default="Prénom")

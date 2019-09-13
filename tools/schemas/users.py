@@ -13,6 +13,18 @@ class ConnectionCredentials(Schema):
     token = fields.Str(required=True)
 
 
+class Notification(Schema):
+    time = fields.DateTime(required=True)
+    message = fields.Str(required=True)
+    object_type = fields.Str(required=True)
+    object_id = fields.Str(required=True)
+    notif_type = fields.Str(required=True)
+
+
+class NotificationDelete(Schema):
+    notif_id = fields.Str(required=True)
+
+
 class AnnotatorCreation(Schema):
     firstname = fields.Str(required=True)
     lastname = fields.Str(required=True)
@@ -24,9 +36,12 @@ class AnnotatorDeletion(Schema):
     username = fields.Str(required=True)
 
 
-class AnnotatorShortProfile(Schema):
+class UserShortProfile(Schema):
     fullname = fields.Str(required=True)
     username = fields.Str(required=True)
+
+
+class AnnotatorShortProfile(UserShortProfile):
     last_activity = fields.DateTime(required=True)
     assigned_tasks = fields.Int(required=True)
     active_tasks = fields.Int(required=True)
