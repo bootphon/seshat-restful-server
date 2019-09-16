@@ -2,7 +2,7 @@ from tools.handlers.commons import AnnotatorMethodView, AdminMethodView, LoggedI
 from flask_rest_api import Blueprint
 
 from tools.schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, TaskComment, TaskCommentSubmission, \
-    TaskTextgridSubmission, TextgridErrors
+    TaskTextgridSubmission, TextgridErrors, TaskLockRequest
 
 tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
                       description="Operations to manage, interact with and display tasks")
@@ -21,10 +21,26 @@ class AssignTasksHandler(AdminMethodView):
 
     @tasks_blp.arguments(TaskAssignment(many=True))
     @tasks_blp.response(code=200)
-    def post(self):
+    def post(self, args):
         pass
 
-#TODO: lock task and delete task handlers
+
+@tasks_blp.route("delete/")
+class DeleteTaskHandler(AdminMethodView):
+
+    @tasks_blp.response(code=200)
+    def delete(self, args):
+        pass
+
+
+@tasks_blp.route("lock/")
+class LockTaskHandler(AdminMethodView):
+
+    @tasks_blp.arguments(TaskLockRequest)
+    @tasks_blp.response(code=200)
+    def post(self, args):
+        pass
+
 
 @tasks_blp.route("/status/admin/<task_id>")
 class GetAdminTaskDataHandler(AdminMethodView):
@@ -46,7 +62,7 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
     @tasks_blp.response(TextgridErrors)
-    def post(self, task_id: str):
+    def post(self, args, task_id: str):
         pass
 
 
@@ -55,7 +71,7 @@ class CheckTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
     @tasks_blp.response(TextgridErrors)
-    def post(self):
+    def post(self, args):
         pass
 
 
@@ -68,5 +84,5 @@ class TaskCommentHandler(LoggedInMethodView):
 
     @tasks_blp.arguments(TaskCommentSubmission)
     @tasks_blp.response(code=200)
-    def post(self, task_id: str):
+    def post(self, args, task_id: str):
         pass

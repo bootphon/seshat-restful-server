@@ -37,7 +37,7 @@ class WikiUpdateHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignWikiPage)
     @campaigns_blp.response(code=200)
-    def post(self, campaign_slug: str):
+    def post(self, args, campaign_slug: str):
         pass
 
 

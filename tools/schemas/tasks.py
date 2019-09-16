@@ -19,6 +19,11 @@ class TaskAssignment(Schema):
     double_annot_assign = fields.Nested(DoubleAnnotatorAssignment())
 
 
+class TaskLockRequest(Schema):
+    task_id = fields.Str(required=True)
+    lock_status = fields.Bool(required=True)
+
+
 class TaskShort(Schema):
     filename = fields.Str(required=True)
     deadline = fields.Date()

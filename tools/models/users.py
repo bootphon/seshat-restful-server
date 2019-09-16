@@ -2,6 +2,7 @@ import hashlib
 import os
 from datetime import datetime
 
+import jwt
 from mongoengine import Document, BooleanField, StringField, ListField, \
     ReferenceField, DoesNotExist, DateTimeField, EmailField, \
     PULL
@@ -56,8 +57,23 @@ class User(Document):
                                         100000).hex()
         return self.salted_password_hash == pass_hash
 
-    def check_token(self, token: str):
+    def get_token(self):
+        from flask import current_app
+        token_salt = os.urandom(16).hex()
+        token_payload = {"salt": token_salt,
+                         "username": self.username}
+        token = jwt.encode(token_payload,
+                           current_app["SECRET_KEY"],
+                           algorithm="HS256")
+        self.active_tokens.append(token)
+        self.save()
+        return token
+
+    def delete_token(self, token: str):
         pass
+
+    def check_token(self, token: str):
+        return token in self.active_tokens
 
     @staticmethod
     def create_password_hash(password: str):

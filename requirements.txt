@@ -9,3 +9,4 @@ flask-cors
 numpy
 marshmallow_enum
 marshmallow
+pyjwt

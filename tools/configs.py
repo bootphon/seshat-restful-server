@@ -15,7 +15,6 @@ class BaseConfig:
     OPENAPI_SWAGGER_UI_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.19.5/'
 
 
-
 class DebugConfig(BaseConfig):
     """Debug Flask Config """
 

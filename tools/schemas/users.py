@@ -52,3 +52,9 @@ class AnnotatorFullProfile(AnnotatorShortProfile):
     email = fields.Str(required=True)
     creation_date = fields.Date(required=True)
     tasks = fields.List(fields.Nested(TaskShort))
+
+
+class AnnotatorLockRequest(Schema):
+    username = fields.Str(required=True)
+    lock_status = fields.Bool(required=True)
+

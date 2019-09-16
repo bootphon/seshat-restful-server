@@ -18,8 +18,8 @@ class CurrentTextGridDownloadHandler(LoggedInMethodView):
         pass
 
 
-@downloads_blp.route("/task/<task_id>/<file>")
+@downloads_blp.route("/task/<task_id>/<file_name>")
 class TaskFileDownload(LoggedInMethodView):
 
-    def get(self, task_id: str, file: str):
+    def get(self, task_id: str, file_name: str):
         pass

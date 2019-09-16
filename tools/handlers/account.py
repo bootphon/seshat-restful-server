@@ -13,7 +13,7 @@ class LoginHandler(MethodView):
 
     @accounts_blp.arguments(LoginCredentials)
     @accounts_blp.response(ConnectionCredentials)
-    def post(self):
+    def post(self, args):
         pass
 
 
@@ -34,5 +34,5 @@ class NotificationsHandler(LoggedInMethodView):
 
     @accounts_blp.arguments(NotificationDelete)
     @accounts_blp.response(code=200)
-    def delete(self):
+    def delete(self, args):
         pass
