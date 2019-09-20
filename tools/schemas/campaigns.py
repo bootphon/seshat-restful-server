@@ -28,6 +28,7 @@ class CampaignCreation(Schema):
     # TODO : validate that one XOR the other is present
     data_csv = fields.Str()
     data_folder = fields.Str()
+    enable_audio_file_dl = fields.Bool(required=True)
     textgrid_validation = fields.Bool(default=True)
 
 

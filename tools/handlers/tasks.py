@@ -1,8 +1,11 @@
 from tools.handlers.commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
-from flask_rest_api import Blueprint
+from flask_rest_api import Blueprint, abort
 
-from tools.schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, TaskComment, TaskCommentSubmission, \
-    TaskTextgridSubmission, TextgridErrors, TaskLockRequest
+from tools.models import SingleAnnotatorTask
+from tools.schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
+    TaskComment, TaskCommentSubmission, \
+    TaskTextgridSubmission, TextgridErrors, TaskLockRequest, \
+    SingleAnnotatorAssignment
 
 tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
                       description="Operations to manage, interact with and display tasks")
@@ -13,7 +16,8 @@ class ListAssignedTasksHandler(AnnotatorMethodView):
 
     @tasks_blp.response(TaskShort(many=True))
     def get(self):
-        pass
+        """Lists all tasks assigned to the currently logged-in annotator"""
+        return [task.to_short_msg() for task in self.user.assigned_tasks]
 
 
 @tasks_blp.route("assign")
@@ -22,7 +26,12 @@ class AssignTasksHandler(AdminMethodView):
     @tasks_blp.arguments(TaskAssignment(many=True))
     @tasks_blp.response(code=200)
     def post(self, args):
-        pass
+        if "single_annot_assign" in args:
+            SingleAnnotatorTask
+        elif "double_annot_assign" in args:
+            pass
+        else:
+            abort(400)
 
 
 @tasks_blp.route("delete/")

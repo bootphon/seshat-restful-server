@@ -17,16 +17,13 @@ class Notification(Document):
                              choices=["assignment", "comment",
                                       "upload", "finished",
                                       "alert"])
-    ICON_MAPPING = {
-        "assignment": "assignment_returned",
-        "comment": "insert_comment",
-        "upload": "publish",
-        "finished": "assignment_turned_in",
-        "alert": "assignment_late"}
+    object_type = StringField(required=True,
+                              choices=["task", "user", "campaign"])
+    object_id = StringField(required=True)
 
-    @property
-    def icon(self):
-        return self.ICON_MAPPING[self.notif_type]
+    def to_msg(self):
+        return self.to_json()
+
 
 
 class User(Document):
@@ -37,7 +34,7 @@ class User(Document):
     username = StringField(required=True, primary_key=True)
     salted_password_hash = StringField(required=True)
     salt = StringField(required=True)
-    active_tokens = ListField(StringField())
+    active_token = StringField()
 
     # User information
     first_name = StringField(default="Prénom")
@@ -63,17 +60,17 @@ class User(Document):
         token_payload = {"salt": token_salt,
                          "username": self.username}
         token = jwt.encode(token_payload,
-                           current_app["SECRET_KEY"],
+                           current_app.config["SECRET_KEY"],
                            algorithm="HS256")
-        self.active_tokens.append(token)
+        self.active_token = token
         self.save()
         return token
 
-    def delete_token(self, token: str):
-        pass
+    def delete_token(self):
+        self.active_token = None
 
     def check_token(self, token: str):
-        return token in self.active_tokens
+        return token == self.active_token
 
     @staticmethod
     def create_password_hash(password: str):

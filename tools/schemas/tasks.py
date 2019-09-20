@@ -1,7 +1,5 @@
 from marshmallow import Schema, fields
 
-from tools.schemas.users import UserShortProfile
-
 
 class SingleAnnotatorAssignment(Schema):
     annotator = fields.Str(required=True)
@@ -13,8 +11,9 @@ class DoubleAnnotatorAssignment(Schema):
 
 
 class TaskAssignment(Schema):
-    filename = fields.Str(required=True)
+    audio_files = fields.List(fields.Str())
     deadline = fields.Date()
+    campaign = fields.Str(required=True)
     single_annot_assign = fields.Nested(SingleAnnotatorAssignment())
     double_annot_assign = fields.Nested(DoubleAnnotatorAssignment())
 
@@ -30,7 +29,7 @@ class TaskShort(Schema):
     task_type = fields.Str(required=True)
     annotators = fields.List(fields.Str())
     assigner = fields.Str(required=True)
-    creation_date = fields.Str(required=True)
+    creation_time = fields.DateTime(required=True)
     status = fields.Str(required=True)
 
 
@@ -40,6 +39,7 @@ class TaskTextGrid(Schema):
 
 
 class TaskComment(Schema):
+    from .users import UserShortProfile
     author = fields.Nested(UserShortProfile, required=True)
     content = fields.Str(required=True)
     creation = fields.Date(required=True)
@@ -65,7 +65,7 @@ class TierMergeConflicts(Schema):
 
 
 class MergeConflicts(Schema):
-    tiers_merges = fields.List(fields.Nested((TierMerge)))
+    tiers_merges = fields.List(fields.Nested(TierMergeConflicts))
 
 
 class TaskFullAnnotator(TaskShort):

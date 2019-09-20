@@ -1,19 +1,16 @@
 from marshmallow import Schema, fields
 
-from .tasks import TaskShort
-
 
 class LoginCredentials(Schema):
     username = fields.Str(required=True)
     password = fields.String(required=True)
 
 
-class ConnectionCredentials(Schema):
-    username = fields.Str(required=True)
+class ConnectionToken(Schema):
     token = fields.Str(required=True)
 
 
-class Notification(Schema):
+class NotificationData(Schema):
     time = fields.DateTime(required=True)
     message = fields.Str(required=True)
     object_type = fields.Str(required=True)
@@ -51,6 +48,7 @@ class AnnotatorShortProfile(UserShortProfile):
 class AnnotatorFullProfile(AnnotatorShortProfile):
     email = fields.Str(required=True)
     creation_date = fields.Date(required=True)
+    from .tasks import TaskShort
     tasks = fields.List(fields.Nested(TaskShort))
 
 

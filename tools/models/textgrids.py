@@ -1,18 +1,11 @@
-from typing import Union, List
-
-from mongoengine import Document, StringField, ReferenceField, ListField, EmailField
-
-from textgrid import TextGrid
-from ..textgrid_checking.common import *
-
-from collections import Counter
 from copy import deepcopy
 from statistics import mean
-from typing import List, Tuple
+from typing import Tuple
+from typing import Union
 
+from mongoengine import Document, StringField, ReferenceField, ListField
 from tgt import Interval, TextGrid, IntervalTier
 
-from .commons import *
 from tools.utils import open_str_textgrid, tg_to_str, consecutive_couples
 
 

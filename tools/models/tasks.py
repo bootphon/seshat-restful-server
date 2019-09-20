@@ -1,9 +1,9 @@
 from datetime import date
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
-from flask import url_for
+from flask import url_for, current_app
 from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
@@ -11,7 +11,7 @@ from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          PULL, ListField, DictField, OperationError)
 
 from tools.models.commons import notif_dispatch
-from tools.models.textgrids import MergedTimesTextGrid
+from tools.models.textgrids import MergedTimesTextGrid, BaseTextGridDocument, SingleAnnotatatorTextGrid
 from .errors import TextGridError
 
 
@@ -29,20 +29,16 @@ class FileDownload(EmbeddedDocument):
 
 class FileUpload(EmbeddedDocument):
     uploader = ReferenceField('Annotator', required=True)
-    tg_file = StringField(required=True)
-    is_valid = BooleanField(required=True)
-    errors = ListField(DictField())
+    tg_file = ReferenceField('BaseTextGridDocument', required=True)
     time = DateTimeField(default=datetime.now, equired=True)
 
     @classmethod
     def create(cls,
                uploader: 'Annotator',
-               textgrid: str,
-               errors: List[TextGridError],
-               is_valid: bool):
+               textgrid: BaseTextGridDocument):
+        textgrid.save()
         return cls(uploader=uploader,
                    tg_file=textgrid,
-                   is_valid=is_valid,
                    errors=[error.to_dict() for error in errors])
 
 
@@ -83,7 +79,7 @@ class BaseTask(Document):
             .replace("/", "_")
 
     @property
-    def textgrids(self) -> dict:
+    def textgrids(self) -> Dict[str, BaseTextGridDocument]:
         raise NotImplemented()
 
     @property
@@ -95,7 +91,7 @@ class BaseTask(Document):
         raise NotImplemented()
 
     @property
-    def current_tg_template(self):
+    def current_tg_template(self) -> str:
         raise NotImplemented()
 
     def get_starter_zip(self) -> bytes:
@@ -108,6 +104,22 @@ class BaseTask(Document):
             FileUpload.create(annotator, textgrid, [], is_valid)
         )
         self.save()
+
+    def log_download(self, downloader: 'Annotator', file_name: str):
+        self.file_downloads.append(
+            FileDownload(downloader=downloader.id,
+                         file=file_name)
+        )
+        self.save()
+
+    def to_short_msg(self):
+        return {"filename" : self.data_file,
+                "deadline": self.deadline,
+                "task_type": self.TASK_TYPE,
+                "annotators": [user.id for user in self.annotators],
+                "assigner": self.assigner.id,
+                "creation_time": self.creation_time,
+                "status": self.status}
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -128,14 +140,7 @@ class BaseTask(Document):
 
     def save(self, *args, **kwargs):
         self.last_update = datetime.now()
-        try:
-            super().save(*args, **kwargs)
-        except OperationError:
-            # This is an ugly and dirty fix: the document tends to overflow the memory limit because of
-            # much too large textgrids. The fix is to empty the upload log and then retry saving.
-            # I truly hope no god from either the old nor the new will judge me for this
-            self.file_uploads.delete()
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @staticmethod
     def notify_assign(annotators: List['Annotator'], campaign: 'Campaign'):
@@ -178,7 +183,7 @@ class BaseTask(Document):
 
 
 class SingleAnnotatorTask(BaseTask):
-    TASK_TYPE = "Annotateur unique"
+    TASK_TYPE = "Single Annotator"
     annotator = ReferenceField('Annotator', required=True)
 
     @classmethod
@@ -186,14 +191,11 @@ class SingleAnnotatorTask(BaseTask):
                           assigner: 'Admin', deadline: date,
                           annotator_username: str):
         from .users import Annotator
-        try:
-            annotator = Annotator.objects.get(username=annotator_username)
-        except DoesNotExist:
-            raise DBError("L'utilisateur %s n'existe pas.")
+        annotator = Annotator.objects.get(username=annotator_username)
 
         for file in audio_files:
             actual_filepath = (
-                    Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
+                    Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
             task_template = cls.create_task_template(str(actual_filepath))
             new_task = cls(
                 campaign=campaign.id,
