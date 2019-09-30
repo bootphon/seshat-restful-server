@@ -4,7 +4,7 @@ from pathlib import Path
 from collections import OrderedDict
 from tempfile import NamedTemporaryFile
 
-from tgt import TextGrid
+from textgrid import TextGrid
 from flask import current_app as app
 from datetime import datetime
 import traceback

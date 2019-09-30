@@ -40,6 +40,7 @@ class CampaignShort(Schema):
     completed_files = fields.Int(required=True)
     data_filename = fields.Str(required=True)
     tiers_number = fields.Int(required=True)
+    check_textgrid = fields.Bool(required=True)
 
 
 class CampaignFull(CampaignShort):

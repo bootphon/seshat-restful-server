@@ -2,7 +2,7 @@ from marshmallow import Schema, fields
 
 
 class LoginCredentials(Schema):
-    username = fields.Str(required=True)
+    login = fields.Str(required=True)
     password = fields.String(required=True)
 
 

@@ -1,21 +1,25 @@
 import zipfile
 from collections import Counter
-from io import BytesIO
-
-from mongoengine import (Document, StringField, ReferenceField, ListField,
-                         PULL, DateTimeField, DoesNotExist)
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
-from os.path import join
-from flask import current_app as app
 
-from tools.models.tasks import BaseTask
-from tools.utils import percentage
-from .commons import DBError
+from flask import current_app as app
+from mongoengine import (Document, StringField, ReferenceField, ListField,
+                         PULL, DateTimeField, DoesNotExist, EmbeddedDocument, EmbeddedDocumentField, BooleanField)
 from slugify import slugify
+
+from seshat.models import BaseTask
+from seshat.utils import percentage
+from .commons import DBError
+from .tg_checking import TextGridCheckingScheme
 
 
 # TODO: set up delete rules (after declaring all classes)
+
+class CampaignStats(EmbeddedDocument):
+    """Stores the campaing basic statistics"""
+    pass
 
 
 class Campaign(Document):
@@ -29,8 +33,14 @@ class Campaign(Document):
     wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
     files_folder_path = StringField(required=True)
-
-    stats = None
+    # the audio file is being served in the starter zip
+    serve_audio = BooleanField(default=False)
+    # this object stores the campaign annotation checking scheme
+    checking_scheme = ReferenceField(TextGridCheckingScheme)
+    # if this is false, textgrid aren't checked (except for the merge part)
+    check_textgrid = BooleanField(default=True)
+    # updated on trigger
+    stats = EmbeddedDocumentField(CampaignStats)
 
     @classmethod
     def create(cls,
@@ -45,7 +55,7 @@ class Campaign(Document):
         except DoesNotExist:
             pass
 
-        # TODO : check multiple choice value
+        # TODO : refactor this full function to use the schema
         files_folder = Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(folder)
         new_campaign = Campaign(name=campaign_name,
                                 slug=campaign_slug,
@@ -117,10 +127,10 @@ class Campaign(Document):
                 task_folder = (zip_folder /
                                Path(task_datafile) /
                                Path(task_annotators))
-                for tg_name, tg_str in task.textgrids.items():
-                    if tg_str:
+                for tg_name, tg_doc in task.files.items():
+                    if tg_doc is not None:
                         tg_archpath = task_folder / Path(tg_name + ".TextGrid")
-                        zfile.writestr(str(tg_archpath), tg_str)
+                        zfile.writestr(str(tg_archpath), tg_doc.to_str())
 
         return buffer.getvalue()
 

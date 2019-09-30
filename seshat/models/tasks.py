@@ -1,18 +1,25 @@
+import zipfile
 from datetime import date
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from typing import List, Dict
 
-from flask import url_for, current_app
+import ffmpeg
+from flask import current_app
+from flask import url_for
 from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
                          FloatField, IntField, EmbeddedDocumentField,
-                         PULL, ListField, DictField, OperationError)
+                         PULL, DoesNotExist)
+from textgrid import TextGrid, IntervalTier
 
-from tools.models.commons import notif_dispatch
-from tools.models.textgrids import MergedTimesTextGrid, BaseTextGridDocument, SingleAnnotatatorTextGrid
-from .errors import TextGridError
+from seshat.models.errors import MergeConflictsError
+from seshat.models.textgrids import MergedAnnotsTextGrid
+from .commons import notif_dispatch, DBError
+from .errors import error_log
+from .textgrids import MergedTimesTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid
 
 
 class TaskComment(EmbeddedDocument):
@@ -30,20 +37,21 @@ class FileDownload(EmbeddedDocument):
 class FileUpload(EmbeddedDocument):
     uploader = ReferenceField('Annotator', required=True)
     tg_file = ReferenceField('BaseTextGridDocument', required=True)
+    is_valid = BooleanField(required=True)
     time = DateTimeField(default=datetime.now, equired=True)
 
     @classmethod
     def create(cls,
                uploader: 'Annotator',
-               textgrid: BaseTextGridDocument):
-        textgrid.save()
+               textgrid: 'BaseTextGridDocument',
+               is_valid: bool):
         return cls(uploader=uploader,
                    tg_file=textgrid,
-                   errors=[error.to_dict() for error in errors])
+                   is_valid=is_valid)
 
 
 class BaseTask(Document):
-    TASK_TYPE = "Tâche de Base"
+    TASK_TYPE = "Base Task"
     meta = {'allow_inheritance': True}
     campaign = ReferenceField('Campaign', required=True)
     assigner = ReferenceField('Admin', required=True)
@@ -83,25 +91,43 @@ class BaseTask(Document):
         raise NotImplemented()
 
     @property
-    def current_instructions(self):
-        raise NotImplemented()
-
-    @property
     def has_started(self):
         raise NotImplemented()
 
-    @property
-    def current_tg_template(self) -> str:
+    def current_instructions(self, user: 'Annotator') -> str:
         raise NotImplemented()
 
-    def get_starter_zip(self) -> bytes:
+    def current_tg_template(self, user: 'Annotator') -> str:
         raise NotImplemented()
+
+    def create_task_template(self, data_file: str):
+        duration = float(ffmpeg.probe(data_file)["format"]["duration"])
+        new_tg = TextGrid(name=data_file,
+                          minTime=0.0,
+                          maxTime=duration)
+        for tier_name in self.campaign.checking_scheme.all_tier_names:
+            new_tier = IntervalTier(name=tier_name,
+                                    minTime=0.0,
+                                    maxTime=duration)
+            new_tg.append(new_tier)
+        self.template_tg = SingleAnnotatorTextGrid.from_textgrid_obj(new_tg, [], self)
+
+    def get_starter_zip(self, user: 'Annotator') -> bytes:
+        buffer = BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
+            zip_folder: str = self.name
+            # TODO: add the audio files if the option is set
+            textgrid_archname = (Path(zip_folder) /
+                                 Path(Path(self.data_file).stem + ".TextGrid"))
+            zfile.writestr(str(textgrid_archname), self.template_tg.to_str())
+
+        return buffer.getvalue()
 
     def _log_upload(self, textgrid, annotator, errors, is_valid: bool = None):
         if is_valid is None:
             is_valid = bool(errors)
         self.file_uploads.append(
-            FileUpload.create(annotator, textgrid, [], is_valid)
+            FileUpload.create(annotator, textgrid, is_valid)
         )
         self.save()
 
@@ -153,30 +179,26 @@ class BaseTask(Document):
 
     def notify_comment(self, commenter: 'User'):
         from .users import User
-        notified_users: List[
-            User] = self.annotators + self.campaign.subscribers
+        notified_users: List[User] = self.annotators + self.campaign.subscribers
         notified_users.remove(commenter)
         notif_dispatch(
-            message="Un commentaire a été posté par %s "
-                    "sur une tâche sur le fichier %s" % (commenter.full_name,
-                                                         self.data_file),
+            message="Un commentaire a été posté par %s sur une tâche sur le fichier %s"
+                    % (commenter.full_name, self.data_file),
             notif_type="comment",
             url=url_for("task_view", task_id=self.id),
             users=notified_users)
 
     def notify_flagged(self, flagger: 'Annotator'):
         notif_dispatch(
-            message="L'annotateur %s vous averti d'un problème "
-                    "sur la tâche du fichier %s" % (
-                    flagger.full_name, self.data_file),
+            message="L'annotateur %s vous averti d'un problème sur la tâche du fichier %s"
+                    % (flagger.full_name, self.data_file),
             notif_type="alert",
             url=url_for("admin_task_view", task_id=self.id),
             users=self.campaign.subscribers)
 
     def notify_done(self):
         notif_dispatch(
-            message="La tâche sur le fichier %s est terminée " %
-                    self.data_file,
+            message="La tâche sur le fichier %s est terminée " % self.data_file,
             notif_type="finished",
             url=url_for("admin_task_view", task_id=self.id),
             users=self.campaign.subscribers)
@@ -191,20 +213,27 @@ class SingleAnnotatorTask(BaseTask):
                           assigner: 'Admin', deadline: date,
                           annotator_username: str):
         from .users import Annotator
-        annotator = Annotator.objects.get(username=annotator_username)
+        try:
+            annotator = Annotator.objects.get(username=annotator_username)
+        except DoesNotExist:
+            raise DBError("L'utilisateur %s n'existe pas.")
 
         for file in audio_files:
-            actual_filepath = (
-                    Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
-            task_template = cls.create_task_template(str(actual_filepath))
+            actual_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
+            # TODO : clean up this function
+            task_template_tg = cls.create_task_template(str(actual_filepath))
+            template_tg_doc = SingleAnnotatorTextGrid.from_textgrid_obj(task_template_tg, [annotator], None)
+            template_tg_doc.save()
             new_task = cls(
                 campaign=campaign.id,
                 assigner=assigner.id,
                 data_file=file,
                 deadline=deadline,
                 annotator=annotator.id,
-                template_tg=task_template)
+                template_tg=template_tg_doc)
             new_task.save()
+            template_tg_doc.task = new_task
+            template_tg_doc.save()
             campaign.tasks.append(new_task.id)
             annotator.assigned_tasks.append(new_task.id)
         cls.notify_assign([annotator], campaign)
@@ -215,74 +244,38 @@ class SingleAnnotatorTask(BaseTask):
     def annotators(self):
         return [self.annotator]
 
-    @property
-    def current_instructions(self):
-        if self.tasks_tg is None:
-            return self.INITIAL_TEMPLATE_INSTRUCTIONS
+    def current_instructions(self, user: 'Annotator') -> str:
+        return self.INITIAL_TEMPLATE_INSTRUCTIONS
 
-        else:
-            return self.TASK_TEMPLATE_INSTRUCTIONS
-
-    @property
-    def current_tg_template(self):
-        if self.tasks_tg is None:
-            return "template"
-        elif self.final_tg is None:
+    def current_tg_template(self, user: 'Annotator') -> str:
+        if self.final_tg is None:
             return "tasks_template"
         else:
             return "final"
-
-    def get_starter_zip(self) -> bytes:
-        buffer = BytesIO()
-        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
-            zip_folder: str = self.name
-            textgrid_archname = (Path(zip_folder) /
-                                 Path(Path(self.data_file).stem + ".TextGrid"))
-            zfile.writestr(
-                str(textgrid_archname), self.template_tg)
-
-        return buffer.getvalue()
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
             return
 
-        if self.tasks_tg is None:
-            checker = TaskTextGridChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.tasks_tg = textgrid
-                self.tasks_template_tg = checker.get_4_tiers_textgrid()
-        else:
-            checker = TaskAnnotationChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.final_tg = textgrid
-                self.notify_done()
+        tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+        tg.check()
+        if not error_log.has_errors:
+            self.final_tg = tg
+            self.is_done = True
+            self.notify_done()
 
-        self.save()
-        self._log_upload(textgrid, annotator, checker.errors)
-        if checker.is_valid():
-            return None, checker.warnings
-        else:
-            return checker.errors, checker.warnings
+        self.cascade_save()
+        self._log_upload(textgrid, annotator, not error_log.has_errors)
 
     def validate_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
             return
 
-        if self.tasks_tg is None:
-            checker = TaskTextGridChecker(textgrid)
-        else:
-            checker = TaskAnnotationChecker(textgrid)
+        error_log.flush()
+        tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.annotator], self)
 
-        checker.validate()
-
-        self._log_upload(textgrid, annotator, checker.errors)
-        if checker.is_valid():
-            return None, checker.warnings
-        else:
-            return checker.errors, checker.warnings
+        tg.check()
+        self._log_upload(textgrid, annotator, not error_log.has_errors)
 
 
 class FrontierMerge(EmbeddedDocument):
@@ -339,16 +332,19 @@ class DoubleAnnotatorTask(BaseTask):
     # times that could be merged automatically are merged, annotators have to
     # agree on frontiers that are too "far away" from each other
     merged_times_tg = StringField()
-    # times conflicts could all be merged, this is a regular 4-tier textgrid
-    final_tg = StringField()
+
+    INITIAL_TEMPLATE_INSTRUCTIONS = \
+        """Annote le fichier selon le protocole défini au préalable avec ton 
+        encadrante."""
 
     WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS = \
         """Attends que l'annotatrice dite '%s' termine son travail d'annotation 
-        pour poursuivre."""
+        pour poursuivre. Tu peux continuer à soumettre pour améliorer ton TextGrid 
+        actuel si tu le juge perfectible."""
 
-    WAIT_FOR_REF_INSTRUCTIONS = \
-        """L'annotatrice référence doit d'abord faire l'annotation des tâches 
-        des base. Il faut attendre qu'elle ait terminé pour commencer."""
+    CANT_MAKE_MERGED = \
+        """Vos TextGrids de peuvent être fusionnés en un seul pour l'instant à cause d'incohérences
+        sur les Tiers. Mettez vous d'accord sur les tiers contenu dans les textgrids"""
 
     REF_MERGE_ANNOTS_INSTRUCTIONS = \
         """Il faut maintenant que l'annotatrice dite 'target' te rejoigne pour 
@@ -365,7 +361,7 @@ class DoubleAnnotatorTask(BaseTask):
         """Toujours ensemble avec l'annotatrice target, vous devez faire en 
         sorte que les frontières qui n'ont pas pu être fusionnées 
         (indiquées ci-dessous) soient plus proches (%ims).""" \
-        % int(MergedTimesTextGrid.DIFF_THRESHOLD * 1000)
+        % int(MergedAnnotsTextGrid.DIFF_THRESHOLD * 1000)
 
     TARGET_MERGE_TIMES_INSTRUCTIONS = \
         """Rejoins maintenant l'annotatrice référence pour pouvoir, 
@@ -377,48 +373,37 @@ class DoubleAnnotatorTask(BaseTask):
     def status(self):
         if not self.is_done:
             if self.ref_tg is None or self.target_tg is None:
-                return "Annotations parallèles"
+                return "Parallel annotations"
             elif self.merged_annots_tg is None:
-                return "Fusion des annots."
+                return "Merging annotations"
             else:
-                return "Fusion des temps"
+                return "Merging times"
         else:
-            return "Terminée"
+            return "Done"
 
     @property
     def annotators(self):
         return [self.reference, self.target]
 
-    def notify_task_template(self):
-        notif_dispatch(
-            message=("L'annotatrice référence a terminé l'annotation des"
-                     "tâches sur "
-                     "la tâche double-annotateur du fichier %s"
-                     % (self.data_file)),
-            notif_type="finished",
-            url=url_for("annotator_task", task_id=self.id),
-            users=[self.target])
-
     def notify_merged_ready(self, annotator: 'Annotator'):
+        # TODO: tranlate this
         notif_dispatch(
-            message=("L'autre annotatrice a terminé l'annotation sur "
-                     "la tâche double-annotateur du fichier %s"
-                     % (self.data_file)),
+            message=("L'autre annotatrice a terminé l'annotation sur la tâche double-annotateur du fichier %s"
+                     % self.data_file),
             notif_type="finished",
             url=url_for("annotator_task", task_id=self.id),
             users=[annotator])
 
-    @property
-    def current_instructions(self):
-        if current_user._get_current_object() == self.reference:
+    def current_instructions(self, user: 'Annotator') -> str:
+        if user == self.reference:
             if self.ref_tg is None:
-                if self.tasks_template_tg is None:
-                    return self.INITIAL_TEMPLATE_INSTRUCTIONS
-                else:
-                    return self.TASK_TEMPLATE_INSTRUCTIONS
+                return self.INITIAL_TEMPLATE_INSTRUCTIONS
 
             elif self.ref_tg is not None and self.target_tg is None:
-                return self.WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS % "Target"
+                return self.WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS % "target"
+
+            elif self.ref_tg is not None and self.ref_tg is not None and self.merged_tg is None:
+                return self.CANT_MAKE_MERGED
 
             elif self.merged_annots_tg is None:
                 return self.REF_MERGE_ANNOTS_INSTRUCTIONS
@@ -427,14 +412,14 @@ class DoubleAnnotatorTask(BaseTask):
                 return self.REF_MERGE_TIMES_INSTRUCTIONS
 
         else:  # it's the target annotator
-            if self.ref_tg is None:
-                if self.tasks_template_tg is None:
-                    return self.WAIT_FOR_REF_INSTRUCTIONS
-                elif self.target_tg is not None:
-                    return (self.WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS
-                            % "reference")
-                else:
-                    return self.TASK_TEMPLATE_INSTRUCTIONS
+            if self.target_tg is None:
+                return self.INITIAL_TEMPLATE_INSTRUCTIONS
+
+            elif self.ref_tg is None and self.target_tg is not None:
+                return self.WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS % "reference"
+
+            elif self.ref_tg is not None and self.ref_tg is not None and self.merged_tg is None:
+                return self.CANT_MAKE_MERGED
 
             elif self.merged_annots_tg is None:
                 return self.TARGET_MERGE_ANNOTS_INSTRUCTIONS
@@ -442,61 +427,14 @@ class DoubleAnnotatorTask(BaseTask):
             else:
                 return self.TARGET_MERGE_TIMES_INSTRUCTIONS
 
-    @property
-    def current_tg_template(self):
-        if self.tasks_tg is None:
-            return "template"
-        elif self.ref_tg is None:
-            return "tasks_template"
-        elif self.merged_annots_tg is None:
-            return "merged"
-        elif self.final_tg is None:
-            return "merged_times"
-        else:
-            return "final"
-
-    def get_starter_zip(self) -> bytes:
-        buffer = BytesIO()
-        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
-            zip_folder: str = self.name
-            if current_user._get_current_object() == self.reference:
-                textgrid_archname = (
-                        Path(zip_folder) /
-                        Path(Path(self.data_file).stem + ".TextGrid"))
-                zfile.writestr(str(textgrid_archname), self.template_tg)
-            else:
-                textgrid_archname = (
-                        Path(zip_folder) /
-                        Path(Path(self.data_file).stem
-                             + "_tasks_template.TextGrid"))
-                zfile.writestr(str(textgrid_archname), self.tasks_template_tg)
-
-        return buffer.getvalue()
-
-    @property
-    def textgrids(self):
-        out = super().textgrids
-        out.update({
-            "ref": self.ref_tg,
-            "target": self.target_tg,
-            "merged": self.merged_tg,
-            "merged_annots": self.merged_annots_tg,
-            "merged_times": self.merged_times_tg,
-            "final": self.final_tg,
-            "conflicts_log": self.times_conflicts.merge_conflicts_log
-            if self.times_conflicts is not None else None
-        })
-        return out
-
     @classmethod
     def create_and_assign(cls, audio_files: List[str], campaign: 'Campaign',
                           assigner: 'Admin', deadline: date, ref_username: str,
                           target_username: str):
         if target_username == ref_username:
-            raise DBError("L'annotateur référence et cible  "
-                          "doivent être différents")
+            raise DBError("L'annotateur référence et cible doivent être différents")
 
-        from .users import Annotator
+        from . import Annotator
         try:
             ref_annotator = Annotator.objects.get(username=ref_username)
         except DoesNotExist:
@@ -507,9 +445,11 @@ class DoubleAnnotatorTask(BaseTask):
             raise DBError("L'utilisateur %s n'existe pas." % ref_username)
 
         for file in audio_files:
-            actual_filepath = (
-                    Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
-            task_template = cls.create_task_template(str(actual_filepath))
+            actual_filepath = ( Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
+            # TODO: refactor this code
+            template_tg = cls.create_task_template(str(actual_filepath))
+            template_tg_doc = SingleAnnotatorTextGrid.from_textgrid_obj(template_tg, [], None)
+            template_tg_doc.save()
             new_task = cls(
                 campaign=campaign.id,
                 assigner=assigner.id,
@@ -517,8 +457,9 @@ class DoubleAnnotatorTask(BaseTask):
                 deadline=deadline,
                 reference=ref_annotator.id,
                 target=target_annotator.id,
-                template_tg=task_template)
+                template_tg=template_tg_doc)
             new_task.save()
+            template_tg_doc.task = new_task
             campaign.tasks.append(new_task.id)
             campaign.save()
             ref_annotator.assigned_tasks.append(new_task.id)
@@ -527,150 +468,159 @@ class DoubleAnnotatorTask(BaseTask):
         cls.notify_assign([ref_annotator, target_annotator], campaign)
         target_annotator.save()
 
-    def render_merged(self):
-        """Simply interwines the ref and target into one tg for annotations
-        merging"""
-        ref_tg = open_str_textgrid(self.ref_tg)
-        target_tg = open_str_textgrid(self.target_tg)
-        merged_tg = TextGrid(name=ref_tg.name,
-                             maxTime=ref_tg.maxTime,
-                             minTime=ref_tg.minTime)
-        for tier_name in ref_tg.getNames():
-            ref_tier: IntervalTier = deepcopy(ref_tg.getFirst(tier_name))
-            target_tier: IntervalTier = deepcopy(target_tg.getFirst(tier_name))
-            ref_tier.name = tier_name + "-ref"
-            target_tier.name = tier_name + "-target"
-            merged_tg.append(ref_tier)
-            merged_tg.append(target_tier)
-        self.merged_tg = tg_to_str(merged_tg)
+    @property
+    def files(self) -> dict:
+        return {
+            "template": self.template_tg,
+            "ref": self.ref_tg,
+            "target": self.target_tg,
+            "merged": self.merged_tg,
+            "merged_annots": self.merged_annots_tg,
+            "merged_times": self.merged_times_tg,
+            "final": self.final_tg,
+            "conflicts_log": self.times_conflicts.merge_conflicts_log
+            if self.times_conflicts is not None else None
+        }
 
-    def render_merged_times(self):
-        """Merges times"""
-        annots_merged_tg = open_str_textgrid(self.merged_annots_tg)
-        for tier_name in ("Task", "Patient", "Non-patient", "Sentence"):
-            tier: IntervalTier = annots_merged_tg.getFirst(tier_name + "-ref")
-            tier.name = tier_name + "-merged"
+    @property
+    def has_started(self):
+        return self.ref_tg is not None or self.target_tg is not None
 
-        times_merger = MergedTimesTextGridChecker(tg_to_str(annots_merged_tg))
-        times_merger.check_times_merging()
-        self.times_conflicts = times_merger.merge_results
-        merged_times_tg = deepcopy(times_merger.merged_times_tg)
-        new_tg = TextGrid(name=merged_times_tg.name,
-                                   maxTime=merged_times_tg.maxTime,
-                                   minTime=merged_times_tg.minTime)
-
-        for tier_name in ("Task", "Patient", "Non-patient", "Sentence"):
-            merged_tier: IntervalTier = deepcopy(merged_times_tg
-                                                 .getFirst(tier_name))
-            target_tier: IntervalTier = deepcopy(annots_merged_tg
-                                                 .getFirst(tier_name + "-target"))
-            merged_tier.name = tier_name + "-merged"
-            new_tg.append(merged_tier)
-            new_tg.append(target_tier)
-        self.merged_times_tg = tg_to_str(new_tg)
+    def current_tg_template(self, user: 'Annotator') -> str:
+        if self.merged_tg is None:
+            if user == self.reference:
+                if self.ref_tg is None:
+                    return "template"
+                else:
+                    return "ref"
+            else:  # it's the target
+                if self.target_tg is None:
+                    return "template"
+                else:
+                    return "target"
+        elif self.merged_annots_tg is None:
+            return "merged"
+        elif self.final_tg is None:
+            return "merged_times"
+        else:
+            return "final"
 
     def process_ref(self, textgrid: str):
-        # TODO : do not forget to send notification to all project "followers"
-        if self.tasks_tg is None:
-            checker = TaskTextGridChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.tasks_tg = textgrid
-                self.tasks_template_tg = checker.get_4_tiers_textgrid()
-            self.notify_task_template()
-
-        elif self.merged_tg is None:
+        """Handles the submission of a textgrid sent by the reference annotator"""
+        if self.merged_tg is None:
             # it's a completed textgrid
-            checker = TaskAnnotationChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.ref_tg = textgrid
+            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
+            tg.check()
+            if not error_log.has_errors:
+                self.ref_tg = tg
                 if self.target_tg is not None:
-                    self.render_merged()
+                    error_log.flush()
+                    merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
+                    if not error_log.has_errors:
+                        self.merged_tg = merged_tg
+                        self.notify_merged_ready(self.target)
+
+        elif self.merged_tg is None and self.target_tg is not None:
+            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
+            tg.check()
+            if not error_log.has_errors:
+                self.ref_tg = tg
+                error_log.flush()
+                merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
+                if not error_log.flush():
+                    self.merged_tg = merged_tg
                     self.notify_merged_ready(self.target)
 
         elif self.merged_annots_tg is None:
             # processing the merged annots textgrid
-            checker = MergedAnnotTextgridChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.merged_annots_tg = textgrid
-                self.render_merged_times()
+            tg = MergedAnnotsTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg.check()
+            if not error_log.has_errors:
+                self.merged_annots_tg = tg
+                merged_times_tg, self.times_conflicts = tg.gen_merged_times()
+                self.merged_times_tg = MergedTimesTextGrid.from_textgrid_obj(merged_times_tg,
+                                                                                   self.annotators,
+                                                                                   self)
 
         else:
-            checker = MergedTimesTextGridChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.final_tg = tg_to_str(checker.merged_times_tg)
+            tg = MergedTimesTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg.check()
+            if not error_log.has_errors:
+                final_tg, _ = tg.check_times_merging()
+                self.final_tg = SingleAnnotatorTextGrid.from_textgrid_obj(final_tg, self.annotators, self)
                 self.is_done = True
                 self.notify_done()
 
-        return checker
-
     def process_target(self, textgrid: str):
-        # TODO : do not forget to send notification to all project "followers"
+        """Handles the submission of a textgrid sent by the target annotator"""
         if self.merged_tg is None:
             # it's a completed textgrid
-            checker = TaskAnnotationChecker(textgrid)
-            checker.validate()
-            if checker.is_valid():
-                self.target_tg = textgrid
+            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg.check()
+            if not error_log.has_errors:
+                self.target_tg = tg
                 if self.ref_tg is not None:
-                    self.render_merged()
+                    error_log.flush()
+                    merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
+                    if not error_log.has_errors:
+                        self.merged_tg = merged_tg
+                        self.notify_merged_ready(self.reference)
+
+        elif self.merged_tg is None and self.reference is not None:
+            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.target_tg], self)
+            tg.check()
+            if not error_log.has_errors:
+                self.ref_tg = tg
+                error_log.flush()
+                merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
+                if not error_log.flush():
+                    self.merged_tg = merged_tg
                     self.notify_merged_ready(self.reference)
-            return checker
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
             return
-        checker = None
-        if annotator == self.reference:
-            checker = self.process_ref(textgrid)
-        elif annotator == self.target:
-            checker = self.process_target(textgrid)
-            if checker is None:
-                return
 
-        self.save()
-        self._log_upload(textgrid, annotator, checker.errors)
-        if checker.is_valid():
-            return None, checker.warnings
-        else:
-            return checker.errors, checker.warnings
+        error_log.flush()
+        if annotator == self.reference:
+            self.process_ref(textgrid)
+        elif annotator == self.target:
+            self.process_target(textgrid)
+
+        self.cascade_save()
+        self._log_upload(textgrid, annotator, not error_log.has_errors)
 
     def validate_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
             return
 
+        error_log.flush()
+        tg: BaseTextGridDocument = None
         if annotator == self.reference:
-            if self.tasks_tg is None:
-                checker = TaskTextGridChecker(textgrid)
-
-            elif self.merged_tg is None:
+            if self.merged_tg is None:
                 # it's a completed textgrid
-                checker = TaskAnnotationChecker(textgrid)
+                tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
 
             elif self.merged_annots_tg is None:
                 # processing the merged annots textgrid
-                checker = MergedAnnotTextgridChecker(textgrid)
+                tg = MergedAnnotsTextGrid.from_textgrid_str(textgrid, self.annotators, self)
 
+            elif self.merged_times_tg is not None and self.final_tg is None:
+                # the times haven't been merged yet
+                tg = MergedTimesTextGrid.from_textgrid_str(textgrid, self.annotators, self)
             else:
-                checker = MergedTimesTextGridChecker(textgrid)
+                # it's the final textgrid
+                tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
         elif annotator == self.target:
             # only one possible textgrid to validate
-            checker = TaskAnnotationChecker(textgrid)
+            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.target_tg], self)
         else:
             return
 
-        checker.validate()
-
-        self._log_upload(textgrid, annotator, checker.errors)
-        if checker.is_valid():
-            return None, checker.warnings
-        else:
-            return checker.errors, checker.warnings
+        tg.check()
+        self._log_upload(textgrid, annotator, not error_log.has_errors)
 
 
 from .users import Annotator
-
+# TODO :check that all stuff that should be delete is deleted
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)

@@ -1,22 +1,7 @@
-from typing import List
+from typing import List, Dict
+from collections import defaultdict
 
-from tgt import Interval
-
-VALID_TASKS_NAMES = [
-    "[a]",
-    "l-[a]-[i]-[u]",
-    "he ho",
-    "1-20",
-    "20-1",
-    "les dernières 24h",
-    "histoire tristesse",
-    "mois de l'année endroit",
-    "mois de l'année envers",
-    "le petit chaperon rouge",
-    "histoire colère",
-    "le vol du cookie",
-    "histoire joie"
-]
+from textgrid import Interval
 
 
 class TextGridError:
@@ -196,22 +181,45 @@ class TextGridWarning:
         return "Annotation inhabituelle"
 
 
-class TextGridAnnotationWarning(TextGridWarning):
-    def __init__(self, tier: str, annot_idx: int, interval: Interval,
-                 msg: str):
-        super().__init__(msg)
-        self.tier, self.idx = tier, annot_idx,
-        self.interval = interval
-        self.msg = msg
+class ErrorsLog:
+
+    def __init__(self):
+        self.structural: List[TextGridStructuralError] = list()
+        self.annot: Dict[str, List[TextgridAnnotationError]] = defaultdict(list)
+        self.mismatch: List[TextgridAnnotationMismatch] = list()
+        self.timing: List[MergeConflictsError] = list()
+        self.warnings: List[TextGridWarning] = list()
+
+    def log_structural(self, msg: str):
+        self.structural.append(TextGridStructuralError(msg))
+
+    def log_mismatch(self, ref_tier: str, target_tier: str, annot_idx: int,
+                 ref_interval: Interval, target_interval):
+        self.mismatch.append(TextgridAnnotationMismatch(
+            ref_tier, target_tier, annot_idx, ref_interval, target_interval
+        ))
+
+    def log_merge(self, merge_conflict: MergeConflictsError):
+        self.timing.append(merge_conflict)
+
+    def log_annot(self, tier: str, annot_idx: int, interval: Interval, msg: str):
+        self.annot[tier].append(TextgridAnnotationError(tier, annot_idx, interval, msg))
+
+    def warning(self, msg):
+        self.warnings.append(TextGridWarning(msg))
+
+    def flush(self):
+        self.structural = list()
+        self.annot = defaultdict(list)
+        self.mismatch = list()
+        self.timing = list()
+        self.warnings = list()
 
     @property
-    def header(self):
-        return ("Dans le Tier \"%s\" , annotation n°%i (de %0.3f à %0.3f)" %
-                (self.tier, self.idx + 1, self.interval.minTime,
-                 self.interval.maxTime))
+    def has_errors(self) -> bool:
+        return any(bool(collection) for collection
+                   in [self.structural, self.annot, self.mismatch, self.timing])
 
 
-class ValidationErrors(Exception):
-    def __init__(self, errors: List[TextGridError], *args):
-        self.errors = errors
-        super().__init__(*args)
+error_log = ErrorsLog()
+

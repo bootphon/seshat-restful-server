@@ -6,7 +6,7 @@ from tools.schemas.users import LoginCredentials, ConnectionToken, \
 from .commons import LoggedInMethodView
 from ..models.users import Notification
 from flask_rest_api import Blueprint, abort
-from mongoengine import DoesNotExist
+from mongoengine import DoesNotExist, Q
 
 accounts_blp = Blueprint("accounts", __name__, url_prefix="/accounts",
                          description="Login/logout operations")
@@ -18,11 +18,14 @@ class LoginHandler(MethodView):
     @accounts_blp.arguments(LoginCredentials)
     @accounts_blp.response(ConnectionToken, code=401)
     def post(self, args):
-        user = User.objects(username=args["username"])
+        user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
+        if user is None:
+            return # returns a 401 error
+
         if user.check_password(args["password"]):
             return {"token": user.get_token()}
         else:
-            return None  # returns a 401 error
+            return  # returns a 401 error
 
 
 @accounts_blp.route("/logout")

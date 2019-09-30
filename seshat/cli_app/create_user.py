@@ -6,6 +6,7 @@ from mongoengine import connect, DoesNotExist
 
 from tools.models.users import Admin, Annotator, User
 
+# TODO : make this script into an "app" that can be used in the seshat namespace
 
 def create_user(username: str,
                 password: str,
