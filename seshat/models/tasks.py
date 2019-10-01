@@ -139,7 +139,7 @@ class BaseTask(Document):
         self.save()
 
     def to_short_msg(self):
-        return {"filename" : self.data_file,
+        return {"filename": self.data_file,
                 "deadline": self.deadline,
                 "task_type": self.TASK_TYPE,
                 "annotators": [user.id for user in self.annotators],
@@ -445,7 +445,7 @@ class DoubleAnnotatorTask(BaseTask):
             raise DBError("L'utilisateur %s n'existe pas." % ref_username)
 
         for file in audio_files:
-            actual_filepath = ( Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
+            actual_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
             # TODO: refactor this code
             template_tg = cls.create_task_template(str(actual_filepath))
             template_tg_doc = SingleAnnotatorTextGrid.from_textgrid_obj(template_tg, [], None)
@@ -539,8 +539,8 @@ class DoubleAnnotatorTask(BaseTask):
                 self.merged_annots_tg = tg
                 merged_times_tg, self.times_conflicts = tg.gen_merged_times()
                 self.merged_times_tg = MergedTimesTextGrid.from_textgrid_obj(merged_times_tg,
-                                                                                   self.annotators,
-                                                                                   self)
+                                                                             self.annotators,
+                                                                             self)
 
         else:
             tg = MergedTimesTextGrid.from_textgrid_str(textgrid, self.annotators, self)
@@ -622,5 +622,6 @@ class DoubleAnnotatorTask(BaseTask):
 
 
 from .users import Annotator
+
 # TODO :check that all stuff that should be delete is deleted
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)

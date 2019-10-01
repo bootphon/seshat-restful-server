@@ -1,11 +1,9 @@
-from tools.handlers.commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from flask_rest_api import Blueprint, abort
-
+from tools.handlers.commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from tools.models import SingleAnnotatorTask
 from tools.schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
     TaskComment, TaskCommentSubmission, \
-    TaskTextgridSubmission, TextgridErrors, TaskLockRequest, \
-    SingleAnnotatorAssignment
+    TaskTextgridSubmission, TextgridErrors, TaskLockRequest
 
 tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
                       description="Operations to manage, interact with and display tasks")

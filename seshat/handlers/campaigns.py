@@ -1,10 +1,11 @@
-from tools.handlers.commons import LoggedInMethodView
-from tools.schemas.campaigns import CampaignCreation, CampaignFull, CampaignShort, CampaignWikiPage, CorporaListing
-from .commons import AdminMethodView
 from flask_rest_api import Blueprint
+from tools.handlers.commons import LoggedInMethodView
+from tools.schemas.campaigns import CampaignCreation, CampaignShort, CampaignWikiPage, CorporaListing
+
+from .commons import AdminMethodView
 
 campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
-                         description="Operations to display and create campaigns")
+                          description="Operations to display and create campaigns")
 
 
 @campaigns_blp.route("available_copora")
@@ -47,4 +48,3 @@ class WikiViewHandler(LoggedInMethodView):
     @campaigns_blp.response(CampaignWikiPage)
     def get(self, campaign_slug: str):
         pass
-

@@ -1,17 +1,17 @@
+import re
 from collections import Counter
 from copy import deepcopy
 from datetime import datetime
 from statistics import mean
 from typing import Tuple
 from typing import Union, List
-import re
 
 from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField
 from textgrid import Interval, TextGrid, IntervalTier
 
-from ..utils import open_str_textgrid, tg_to_str, consecutive_couples
 from .errors import error_log
 from .tg_checking import TextGridCheckingScheme
+from ..utils import open_str_textgrid, tg_to_str, consecutive_couples
 
 
 class BaseTextGridDocument(Document):
@@ -25,7 +25,6 @@ class BaseTextGridDocument(Document):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._textgrid_obj: TextGrid = None
-
 
     @classmethod
     def from_textgrid_obj(cls, tg: TextGrid, creators: List['Annotator'], task: 'BaseTask'):
@@ -66,7 +65,7 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
     def check_structure(self):
         tier_names = set(self.textgrid.getNames())
 
-        #checking for any tier duplicate
+        # checking for any tier duplicate
         names_counter = Counter(self.textgrid.getNames())
         for tier_name, count in names_counter.items():
             if count > 1:
@@ -79,6 +78,7 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
             error_log.structural("The tiers %s are missing in the TextGrid file" % " ,".join(missing_tiers))
 
         # removing all tiers that are referenced in the scheme
+        # TODO: change remove
         tier_names.remove(set(self.checking_scheme.all_tiers_names))
 
         # remaining tiers are invalid
@@ -122,7 +122,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
     TOP_GROUP_SUFFIX = "-ref"
     BOTTOM_GROUP_SUFFIX = "-target"
 
-    DIFF_THRESHOLD = 0.1 # in seconds
+    DIFF_THRESHOLD = 0.1  # in seconds
 
     @classmethod
     def from_ref_and_target(cls, ref_tg: BaseTextGridDocument,
@@ -142,9 +142,11 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             # TODO: maybe make this more helpful
             error_log.structural("The names of some of the tiers in the reference and target textgrids don't match")
             return
-
+         # TODO : add support for empty tiers deletion
         assert ref_tg.task == target_tg.task
-        merged_tg = deepcopy(ref_tg.textgrid)
+        merged_tg = TextGrid(name=ref_tg.textgrid.name,
+                             minTime=ref_tg.textgrid.minTime,
+                             maxTime=ref_tg.textgrid.maxTime)
         for tier_name in ref_tg.textgrid.getNames():
             ref_tier: IntervalTier = deepcopy(ref_tg.textgrid.getFirst(tier_name))
             target_tier: IntervalTier = deepcopy(target_tg.textgrid.getFirst(tier_name))
@@ -158,7 +160,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
     def check_structure(self):
         tier_names_set = set(self.textgrid.getNames())
 
-        #checking for any tier duplicate
+        # checking for any tier duplicate
         names_counter = Counter(self.textgrid.getNames())
         for tier_name, count in names_counter.items():
             if count > 1:
@@ -170,19 +172,19 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             missing_tiers = req_tiers_suffixed - set(self.textgrid.getNames())
             if missing_tiers:
                 error_log.structural("The tiers %s are missing" % " ,".join(missing_tiers))
-            tier_names_set.remove(req_tiers_suffixed)
+            tier_names_set -= req_tiers_suffixed
 
         # in remaining tier names, eliminate those that are FA or MA
         tier_names = set(self.textgrid.getNames())
         all_tiers_suffixed = set(name + suffix for name in set(self.checking_scheme.all_tiers_names))
-        tier_names.remove(all_tiers_suffixed)
+        tier_names -= all_tiers_suffixed
 
         # remaining tiers are invalid
         if tier_names:
             error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % " ,".join(tier_names))
         else:
             # checking that both top and bottom have the same tiers
-            no_suffix = set(re.sub("-(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX), "", name)
+            no_suffix = set(re.sub("(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX), "", name)
                             for name in self.textgrid.getNames())
             tier_names_set = set(self.textgrid.getNames())
             for no_suffix_name in no_suffix:
@@ -281,7 +283,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
                           maxTime=merged_times_tg.maxTime,
                           minTime=merged_times_tg.minTime)
 
-        for tier_name in self.checked_tiers_radical:
+        for tier_name in self.checking_scheme.all_tiers_names:
             merged_tier: IntervalTier = deepcopy(merged_times_tg.getFirst(tier_name))
             target_tier: IntervalTier = deepcopy(self.textgrid.getFirst(tier_name + "-target"))
             merged_tier.name = tier_name + "-merged"
@@ -305,4 +307,3 @@ class MergedTimesTextGrid(MergedAnnotsTextGrid):
         self.check_annotations()
         self.check_annotations_matching()
         self.check_times_merging()
-

@@ -1,13 +1,13 @@
+import traceback
+from collections import OrderedDict
+from datetime import datetime
 from io import StringIO
 from os import makedirs
 from pathlib import Path
-from collections import OrderedDict
 from tempfile import NamedTemporaryFile
 
-from textgrid import TextGrid
 from flask import current_app as app
-from datetime import datetime
-import traceback
+from textgrid import TextGrid
 
 
 def percentage(a, b):
@@ -22,7 +22,7 @@ class Message:
                      "valid": ("light-green lighten-2", "check"),
                      "warning": ("orange lighten-2", "warning")}
 
-    def __init__(self, text: str, msg_type : str):
+    def __init__(self, text: str, msg_type: str):
         assert msg_type in list(self.COLOR_MAPPING.keys())
         self.type = msg_type
         self.color, self.icon = self.COLOR_MAPPING[msg_type]
@@ -86,7 +86,7 @@ def consecutive_couples(iterable):
         yield first, second
 
 
-def textfile_decode(file_content : bytes):
+def textfile_decode(file_content: bytes):
     try:
         return file_content.decode("utf-8")
     except UnicodeDecodeError:
@@ -108,4 +108,3 @@ def log_tgcheck_error(error: Exception, textgrid: bytes):
 
     with open(logdir / Path("textgrid.TextGrid"), "wb") as tg_file:
         tg_file.write(textgrid)
-

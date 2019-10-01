@@ -30,4 +30,3 @@ class CategoricalChecker(AnnotationChecker):
 
     def check_annotation(self, annot: str):
         pass
-

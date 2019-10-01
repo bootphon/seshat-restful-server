@@ -1,8 +1,7 @@
 """Schemas that define how a TextGrid should be checked"""
 from typing import Dict
 
-from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, EmbeddedDocumentListField, \
-    ListField, MapField
+from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField
 from textgrid import IntervalTier
 
 from seshat.models.errors import error_log
@@ -54,8 +53,13 @@ class ParsedField(TierScheme):
 
 class TextGridCheckingScheme(Document):
     name = StringField(required=True)
-    # tier_name -> specs
+    # mapping: tier_name -> specs
     tiers_specs = MapField(EmbeddedDocumentField(TierScheme))
+    # empty tiers can be dropped at mergin
+    drop_empty_tiers = BooleanField(default=False)
+    # for now this isn't set. In the future it'll be a a pluginizable class that can handle checking outside
+    # of the defined generic framework
+    tg_checker_name = StringField()
 
     @classmethod
     def from_tierspecs_schema(cls, scheme_data: Dict, scheme_name: str):
@@ -72,4 +76,3 @@ class TextGridCheckingScheme(Document):
 
     def get_tier_scheme(self, tier_name: str) -> TierScheme:
         return self.tiers_specs[tier_name]
-

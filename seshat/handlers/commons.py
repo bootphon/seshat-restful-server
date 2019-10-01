@@ -1,10 +1,10 @@
-from flask.views import MethodView
+import jwt
 from flask import request, current_app
+from flask.views import MethodView
 from flask_rest_api import abort
 from mongoengine import DoesNotExist
 
 from ..models.users import User, Admin, Annotator
-import jwt
 
 
 class LoggedInMethodView(MethodView):

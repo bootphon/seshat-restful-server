@@ -1,5 +1,5 @@
-from typing import List, Dict
 from collections import defaultdict
+from typing import List, Dict
 
 from textgrid import Interval
 
@@ -194,7 +194,7 @@ class ErrorsLog:
         self.structural.append(TextGridStructuralError(msg))
 
     def log_mismatch(self, ref_tier: str, target_tier: str, annot_idx: int,
-                 ref_interval: Interval, target_interval):
+                     ref_interval: Interval, target_interval):
         self.mismatch.append(TextgridAnnotationMismatch(
             ref_tier, target_tier, annot_idx, ref_interval, target_interval
         ))
@@ -222,4 +222,3 @@ class ErrorsLog:
 
 
 error_log = ErrorsLog()
-

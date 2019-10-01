@@ -1,8 +1,4 @@
-from os import environ
-
-
 class BaseConfig:
-
     MAILING_ACCOUNT0_ADDRESS = "seshat@hadware.ovh"
     MAILING_ACCOUNT0_PASSWORD = "seshatandthoth"
     SMTP_SERVER_ADDRESS = "SSL0.OVH.NET"
@@ -28,13 +24,12 @@ class DebugConfig(BaseConfig):
     SECRET_KEY = 'Seshat'
     DEBUG = True
 
-    #network sertings
+    # network sertings
     HOST = "0.0.0.0"
     PORT = 5000
 
     # Flask-User settings
-    USER_APP_NAME = "Seshat API Debug"      # Shown in and email templates and page footers
-
+    USER_APP_NAME = "Seshat API Debug"  # Shown in and email templates and page footers
 
     # Audio campaign files folder
     CAMPAIGNS_FILES_ROOT = "data/"
@@ -58,7 +53,6 @@ class ProductionConfig(BaseConfig):
         'db': 'seshat_api_prod',
         'host': '127.0.0.1',
         'port': 27017}
-
 
     # Audio campaign files folder
     CAMPAIGNS_FILES_ROOT = "data/"

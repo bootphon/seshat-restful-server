@@ -55,4 +55,3 @@ class AnnotatorFullProfile(AnnotatorShortProfile):
 class AnnotatorLockRequest(Schema):
     username = fields.Str(required=True)
     lock_status = fields.Bool(required=True)
-

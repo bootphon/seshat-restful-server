@@ -1,5 +1,6 @@
-from .commons import AdminMethodView
 from flask_rest_api import Blueprint
+
+from .commons import AdminMethodView
 
 analytics_blp = Blueprint("analytics", __name__, url_prefix="/analytics",
                           description="Operations to display and compute analytics on campaigns")

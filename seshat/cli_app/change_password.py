@@ -1,13 +1,11 @@
-import argparse
 import hashlib
 import os
 
+import argparse
 from mongoengine import connect
-
 from tools.models.users import User
-from tools.models.campaigns import Campaign
 
-# TODO : make this script into an "app" that can be used in the seshat namespace
+#  TODO : make this script into an "app" that can be used in the seshat namespace
 argparser = argparse.ArgumentParser()
 argparser.add_argument("username", type=str, help="Username of user")
 argparser.add_argument("new_password", type=str, help="New password of user")
@@ -25,4 +23,3 @@ if __name__ == "__main__":
     user.salt = salt
     user.salted_password_hash = pass_hash
     user.save()
-

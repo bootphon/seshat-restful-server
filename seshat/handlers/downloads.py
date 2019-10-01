@@ -1,11 +1,10 @@
-from mongoengine import DoesNotExist
-
-from tools.models import BaseTask
-from tools.models.tasks import FileDownload
-from tools.models.users import Annotator
-from .commons import LoggedInMethodView
-from flask import Blueprint, send_file, abort
 import io
+
+from flask import Blueprint, send_file
+from tools.models import BaseTask
+from tools.models.users import Annotator
+
+from .commons import LoggedInMethodView
 
 downloads_blp = Blueprint("downloads", __name__, url_prefix="/downloads")
 

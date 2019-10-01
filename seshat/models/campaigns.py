@@ -51,7 +51,7 @@ class Campaign(Document):
         campaign_slug = slugify(campaign_name)
         try:
             _ = Campaign.objects.get(slug=campaign_slug)
-            raise DBError("Un projet a un nom trop similaire à celui-ci",)
+            raise DBError("Un projet a un nom trop similaire à celui-ci", )
         except DoesNotExist:
             pass
 
@@ -133,5 +133,6 @@ class Campaign(Document):
                         zfile.writestr(str(tg_archpath), tg_doc.to_str())
 
         return buffer.getvalue()
+
 
 BaseTask.register_delete_rule(Campaign, 'tasks', PULL)

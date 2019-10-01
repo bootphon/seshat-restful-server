@@ -1,9 +1,7 @@
+from flask_rest_api import Blueprint
 from tools.handlers.commons import AdminMethodView
 from tools.schemas.users import AnnotatorCreation, AnnotatorFullProfile, AnnotatorShortProfile, AnnotatorDeletion, \
     AnnotatorLockRequest
-from .commons import LoggedInMethodView
-from flask_rest_api import Blueprint
-
 
 users_blp = Blueprint("users", __name__, url_prefix="/users",
                       description="Users administration and creation")

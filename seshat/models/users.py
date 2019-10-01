@@ -6,7 +6,6 @@ import jwt
 from mongoengine import Document, BooleanField, StringField, ListField, \
     ReferenceField, DoesNotExist, DateTimeField, EmailField, \
     PULL
-
 from tools.models.commons import DBError
 
 
@@ -23,7 +22,6 @@ class Notification(Document):
 
     def to_msg(self):
         return self.to_json()
-
 
 
 class User(Document):

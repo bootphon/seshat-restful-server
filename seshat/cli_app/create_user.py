@@ -1,20 +1,20 @@
-import argparse
 import hashlib
 import os
 
+import argparse
 from mongoengine import connect, DoesNotExist
-
 from tools.models.users import Admin, Annotator, User
 
-# TODO : make this script into an "app" that can be used in the seshat namespace
+
+#  TODO : make this script into an "app" that can be used in the seshat namespace
 
 def create_user(username: str,
                 password: str,
                 email: str,
                 first_name: str,
                 last_name: str,
-                user_type: str='admin',
-                db: str='seshat_dev'):
+                user_type: str = 'admin',
+                db: str = 'seshat_dev'):
     connect(db)
     try:
         _ = User.objects.get(username=username)
@@ -55,4 +55,3 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     create_user(args.username, args.password, args.email, args.first_name,
                 args.last_name, args.type, args.db)
-

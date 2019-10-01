@@ -1,12 +1,12 @@
 from flask.views import MethodView
-
+from flask_rest_api import Blueprint
+from mongoengine import Q
 from tools.models import User
 from tools.schemas.users import LoginCredentials, ConnectionToken, \
     NotificationData, NotificationDelete
+
 from .commons import LoggedInMethodView
 from ..models.users import Notification
-from flask_rest_api import Blueprint, abort
-from mongoengine import DoesNotExist, Q
 
 accounts_blp = Blueprint("accounts", __name__, url_prefix="/accounts",
                          description="Login/logout operations")
@@ -20,7 +20,7 @@ class LoginHandler(MethodView):
     def post(self, args):
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
         if user is None:
-            return # returns a 401 error
+            return  # returns a 401 error
 
         if user.check_password(args["password"]):
             return {"token": user.get_token()}

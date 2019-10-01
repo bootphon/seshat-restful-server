@@ -76,7 +76,7 @@ class TaskFullAnnotator(TaskShort):
     allow_file_upload = fields.Bool(required=True)
     # optional because when null, no file should be available for DL
     current_tg_download = fields.Str()
-    # This field is optional because it's only filled in a double annotator task
+    #  This field is optional because it's only filled in a double annotator task
     frontiers_merge_table = fields.Nested(MergeConflicts)
 
 
