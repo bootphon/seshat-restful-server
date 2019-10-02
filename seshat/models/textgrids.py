@@ -6,7 +6,7 @@ from statistics import mean
 from typing import Tuple
 from typing import Union, List
 
-from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField
+from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField, BooleanField
 from textgrid import Interval, TextGrid, IntervalTier
 
 from .errors import error_log
@@ -58,6 +58,10 @@ class BaseTextGridDocument(Document):
 
     def check(self):
         raise NotImplemented()
+
+
+class LoggedTextGrid(BaseTextGridDocument):
+    meta = {"collection": "logged_textgrid"}
 
 
 class SingleAnnotatorTextGrid(BaseTextGridDocument):
@@ -307,3 +311,6 @@ class MergedTimesTextGrid(MergedAnnotsTextGrid):
         self.check_annotations()
         self.check_annotations_matching()
         self.check_times_merging()
+
+
+BaseTextGridDocument.register_delete_rule('BaseTask', )

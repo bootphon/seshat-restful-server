@@ -5,8 +5,10 @@ from datetime import datetime
 import jwt
 from mongoengine import Document, BooleanField, StringField, ListField, \
     ReferenceField, DoesNotExist, DateTimeField, EmailField, \
-    PULL
-from tools.models.commons import DBError
+    PULL, CASCADE, NULLIFY
+
+from seshat.models.textgrids import BaseTextGridDocument
+from .commons import DBError
 
 
 class Notification(Document):
@@ -39,6 +41,8 @@ class User(Document):
     last_name = StringField(default="Nom")
     email = EmailField(required=True, unique=True)
 
+    # TODO : figure out how to delete all referenced notificaitons automatically
+    # look up register_delete_rule(document_cls, field_name, rule)
     pending_notifications = ListField(ReferenceField(Notification))
 
     @property
@@ -87,6 +91,7 @@ class Admin(User):
 class Annotator(User):
     creation_time = DateTimeField(default=datetime.now)
     assigned_tasks = ListField(ReferenceField('BaseTask'))
+    locked = BooleanField(default=False)
 
     stats = None
 
@@ -107,62 +112,19 @@ class Annotator(User):
     def active_tasks(self):
         return [task for task in self.assigned_tasks if not task.is_done]
 
-    @classmethod
-    def create(cls,
-               username: str,
-               password: str,
-               first_name: str,
-               last_name: str,
-               email: str,
-               campaign: str):
-        try:
-            _ = cls.objects.get(username=username)
-            raise DBError("Nom d'utilisateur déjà pris")
-        except DoesNotExist:
-            pass
+    @property
+    def short_profile(self):
+        raise NotImplemented()
 
-        if len(password) < 8:
-            raise DBError("Mot de passe trop court")
-
-        pass_hash, salt = User.create_password_hash(password)
-        new_user = cls(username=username,
-                       salted_password_hash=pass_hash,
-                       salt=salt,
-                       first_name=first_name,
-                       last_name=last_name,
-                       email=email,
-                       assigned_campaign=campaign)
-        new_user.save()
-
-        try:
-            from .campaigns import Campaign
-            campaign_obj = Campaign.objects.get(slug=campaign)
-        except DoesNotExist:
-            raise DBError("La campagne assignée à l'utilisateur n'existe pas")
-        else:
-            campaign_obj.annotators.append(new_user)
-            campaign_obj.save()
-
-        return new_user
-
-    def reassign_campaign(self, campaign_slug):
-        from .campaigns import Campaign
-        try:
-            # removing former ref
-            self.assigned_campaign.annotators.remove(self)
-            self.assigned_campaign.save()
-        except (AttributeError, ValueError):
-            pass
-
-        campaign = Campaign.objects.get(slug=campaign_slug)
-        # new assignment
-        self.assigned_campaign = campaign
-        campaign.annotators.append(self)
-        campaign.save()
-        self.save()
+    @property
+    def full_profile(self):
+        raise NotImplemented()
 
     def compute_stats(self):
         pass
 
 
 Notification.register_delete_rule(User, 'pending_notifications', PULL)
+Annotator.register_delete_rule('SingleAnnotatorTask', 'annotator', CASCADE)
+Annotator.register_delete_rule('DoubleAnnotatorTask', 'reference', CASCADE)
+Annotator.register_delete_rule('DoubleAnnotatorTask', 'target', CASCADE)

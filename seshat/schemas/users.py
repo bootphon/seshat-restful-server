@@ -23,8 +23,9 @@ class NotificationDelete(Schema):
 
 
 class AnnotatorCreation(Schema):
-    firstname = fields.Str(required=True)
-    lastname = fields.Str(required=True)
+    first_name = fields.Str(required=True)
+    last_name = fields.Str(required=True)
+    username = fields.Str(required=True)
     password = fields.Str(required=True)
     email = fields.Email(required=True)
 

@@ -67,6 +67,7 @@ class Campaign(Document):
         return new_campaign
 
     def populate_audio_files(self):
+        # TODO: change this to work with CSV files as well
         p = Path(self.files_folder_path)
         return [Path(*f.parts[1:]) for f in p.glob("**/*") if f.suffix == ".wav"]
 
@@ -87,6 +88,7 @@ class Campaign(Document):
         return BaseTask.objects(campaign=self.id, is_done=False)
 
     def compute_short_stats(self):
+        # TODO update this
         tasks = {
             "done": len([task for task in self.tasks if task.is_done]),
             "assigned": len(self.tasks)
@@ -106,6 +108,7 @@ class Campaign(Document):
         }
 
     def compute_full_stats(self):
+        # TODO change this
         self.compute_short_stats()
 
         all_assignments = []
