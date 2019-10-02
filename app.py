@@ -4,8 +4,8 @@ from mongoengine import connect
 from flask import Flask
 from flask_rest_api import Api
 
-from tools.configs import DebugConfig, ProductionConfig
-from tools.handlers import *
+from seshat.configs import DebugConfig, ProductionConfig
+from seshat.handlers import *
 
 app = Flask('Seshat API')
 app.config.from_object(DebugConfig)

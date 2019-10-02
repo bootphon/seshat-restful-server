@@ -6,7 +6,8 @@ from pathlib import Path
 
 from flask import current_app as app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
-                         PULL, DateTimeField, DoesNotExist, EmbeddedDocument, EmbeddedDocumentField, BooleanField)
+                         PULL, DateTimeField, DoesNotExist, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
+                         ValidationError)
 from slugify import slugify
 
 from seshat.models import BaseTask
@@ -14,8 +15,6 @@ from seshat.utils import percentage
 from .commons import DBError
 from .tg_checking import TextGridCheckingScheme
 
-
-# TODO: set up delete rules (after declaring all classes)
 
 class CampaignStats(EmbeddedDocument):
     """Stores the campaing basic statistics"""
@@ -32,43 +31,34 @@ class Campaign(Document):
     last_update = DateTimeField(default=datetime.now)
     wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
-    files_folder_path = StringField(required=True)
+    # either the CSV or the data folder
+    corpus_path = StringField(required=True)
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
     # this object stores the campaign annotation checking scheme
     checking_scheme = ReferenceField(TextGridCheckingScheme)
     # if this is false, textgrid aren't checked (except for the merge part)
-    check_textgrid = BooleanField(default=True)
+    check_textgrids = BooleanField(default=True)
     # updated on trigger
     stats = EmbeddedDocumentField(CampaignStats)
 
-    @classmethod
-    def create(cls,
-               campaign_name: str,
-               description: str,
-               folder: str,
-               creator: 'Admin'):
-        campaign_slug = slugify(campaign_name)
-        try:
-            _ = Campaign.objects.get(slug=campaign_slug)
-            raise DBError("Un projet a un nom trop similaire à celui-ci", )
-        except DoesNotExist:
-            pass
 
-        # TODO : refactor this full function to use the schema
-        files_folder = Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(folder)
-        new_campaign = Campaign(name=campaign_name,
-                                slug=campaign_slug,
-                                description=description,
-                                files_folder_path=str(files_folder),
-                                creator=creator.id,
-                                subscribers=[creator.id])
-        new_campaign.save()
-        return new_campaign
+    def validate(self, clean=True):
+        if self.corpus_type == "csv" and self.serve_audio:
+            raise ValidationError("Can't serve audio files with a csv corpus")
+
+    @property
+    def corpus_type(self) -> str:
+        raise NotImplemented()
 
     def populate_audio_files(self):
         # TODO: change this to work with CSV files as well
-        p = Path(self.files_folder_path)
+        # with open(str(filepath), "r") as csv_data_file:
+        #     reader = DictReader(csv_data_file)
+        #     if not set(reader.fieldnames) == {"filename", "duration"}:
+        #         logging.warning("CSV file %s doesn't have the right headers")
+        # TODO: datah path is not valid anymore, use  Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(folder)
+        p = Path(self.data_path)
         return [Path(*f.parts[1:]) for f in p.glob("**/*") if f.suffix == ".wav"]
 
     def _tasks_for_file(self, audio_file: str):
@@ -136,6 +126,14 @@ class Campaign(Document):
                         zfile.writestr(str(tg_archpath), tg_doc.to_str())
 
         return buffer.getvalue()
+
+    @property
+    def short_summary(self):
+        raise NotImplemented()
+
+    @property
+    def full_summary(self):
+        raise NotImplemented()
 
 
 BaseTask.register_delete_rule(Campaign, 'tasks', PULL)

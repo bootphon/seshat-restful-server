@@ -165,6 +165,7 @@ class BaseTask(Document):
         self.save()
 
     def save(self, *args, **kwargs):
+        # TODO set up post save that also updates the campaign's last_update
         self.last_update = datetime.now()
         super().save(*args, **kwargs)
 

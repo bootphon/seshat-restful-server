@@ -1,7 +1,7 @@
 from flask_rest_api import Blueprint, abort
-from tools.handlers.commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
-from tools.models import SingleAnnotatorTask
-from tools.schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
+from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
+from ..models import SingleAnnotatorTask
+from ..schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
     TaskComment, TaskCommentSubmission, \
     TaskTextgridSubmission, TextgridErrors, TaskLockRequest
 
