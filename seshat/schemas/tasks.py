@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validates_schema, ValidationError
 
 
 class SingleAnnotatorAssignment(Schema):
@@ -16,6 +16,13 @@ class TaskAssignment(Schema):
     campaign = fields.Str(required=True)
     single_annot_assign = fields.Nested(SingleAnnotatorAssignment())
     double_annot_assign = fields.Nested(DoubleAnnotatorAssignment())
+
+    @validates_schema
+    def validate_data_fields(self, data):
+        single_bool = data.get("single_annot_assign") is None
+        double_bool = data.get("double_annot_assign") is None
+        if single_bool == double_bool:
+            raise ValidationError("Task has to be either single xor double annotator")
 
 
 class TaskLockRequest(Schema):
@@ -97,6 +104,7 @@ class StructuralError(Schema):
 
 
 class TextgridErrors(Schema):
+    # TODO: add merge error and annotation mismatch errors
     structural_errors = fields.List(fields.Nested(StructuralError))
     annot_errors = fields.Dict(keys=fields.Str(),
                                values=fields.Nested(AnnotationErrors))

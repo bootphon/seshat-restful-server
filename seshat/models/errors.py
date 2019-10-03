@@ -220,5 +220,7 @@ class ErrorsLog:
         return any(bool(collection) for collection
                    in [self.structural, self.annot, self.mismatch, self.timing])
 
+    def to_errors_summary(self):
+        raise NotImplemented()
 
 error_log = ErrorsLog()

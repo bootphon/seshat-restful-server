@@ -138,7 +138,8 @@ class BaseTask(Document):
         )
         self.save()
 
-    def to_short_msg(self):
+    @property
+    def short_status(self):
         return {"filename": self.data_file,
                 "deadline": self.deadline,
                 "task_type": self.TASK_TYPE,
@@ -146,6 +147,17 @@ class BaseTask(Document):
                 "assigner": self.assigner.id,
                 "creation_time": self.creation_time,
                 "status": self.status}
+
+    @property
+    def admin_status(self):
+        raise NotImplemented()
+
+    @property
+    def annotator_status(self):
+        raise NotImplemented()
+
+    @property
+    def adnno
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -208,38 +220,6 @@ class BaseTask(Document):
 class SingleAnnotatorTask(BaseTask):
     TASK_TYPE = "Single Annotator"
     annotator = ReferenceField('Annotator', required=True)
-
-    @classmethod
-    def create_and_assign(cls, audio_files: List[str], campaign: 'Campaign',
-                          assigner: 'Admin', deadline: date,
-                          annotator_username: str):
-        from .users import Annotator
-        try:
-            annotator = Annotator.objects.get(username=annotator_username)
-        except DoesNotExist:
-            raise DBError("L'utilisateur %s n'existe pas.")
-
-        for file in audio_files:
-            actual_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
-            # TODO : clean up this function
-            task_template_tg = cls.create_task_template(str(actual_filepath))
-            template_tg_doc = SingleAnnotatorTextGrid.from_textgrid_obj(task_template_tg, [annotator], None)
-            template_tg_doc.save()
-            new_task = cls(
-                campaign=campaign.id,
-                assigner=assigner.id,
-                data_file=file,
-                deadline=deadline,
-                annotator=annotator.id,
-                template_tg=template_tg_doc)
-            new_task.save()
-            template_tg_doc.task = new_task
-            template_tg_doc.save()
-            campaign.tasks.append(new_task.id)
-            annotator.assigned_tasks.append(new_task.id)
-        cls.notify_assign([annotator], campaign)
-        campaign.save()
-        annotator.save()
 
     @property
     def annotators(self):
@@ -428,47 +408,6 @@ class DoubleAnnotatorTask(BaseTask):
             else:
                 return self.TARGET_MERGE_TIMES_INSTRUCTIONS
 
-    @classmethod
-    def create_and_assign(cls, audio_files: List[str], campaign: 'Campaign',
-                          assigner: 'Admin', deadline: date, ref_username: str,
-                          target_username: str):
-        if target_username == ref_username:
-            raise DBError("L'annotateur référence et cible doivent être différents")
-
-        from . import Annotator
-        try:
-            ref_annotator = Annotator.objects.get(username=ref_username)
-        except DoesNotExist:
-            raise DBError("L'utilisateur %s n'existe pas." % ref_username)
-        try:
-            target_annotator = Annotator.objects.get(username=target_username)
-        except DoesNotExist:
-            raise DBError("L'utilisateur %s n'existe pas." % ref_username)
-
-        for file in audio_files:
-            actual_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(file))
-            # TODO: refactor this code
-            template_tg = cls.create_task_template(str(actual_filepath))
-            template_tg_doc = SingleAnnotatorTextGrid.from_textgrid_obj(template_tg, [], None)
-            template_tg_doc.save()
-            new_task = cls(
-                campaign=campaign.id,
-                assigner=assigner.id,
-                data_file=file,
-                deadline=deadline,
-                reference=ref_annotator.id,
-                target=target_annotator.id,
-                template_tg=template_tg_doc)
-            new_task.save()
-            template_tg_doc.task = new_task
-            campaign.tasks.append(new_task.id)
-            campaign.save()
-            ref_annotator.assigned_tasks.append(new_task.id)
-            target_annotator.assigned_tasks.append(new_task.id)
-            ref_annotator.save()
-        cls.notify_assign([ref_annotator, target_annotator], campaign)
-        target_annotator.save()
-
     @property
     def files(self) -> dict:
         return {
@@ -486,6 +425,7 @@ class DoubleAnnotatorTask(BaseTask):
     @property
     def has_started(self):
         return self.ref_tg is not None or self.target_tg is not None
+
 
     def current_tg_template(self, user: 'Annotator') -> str:
         if self.merged_tg is None:
