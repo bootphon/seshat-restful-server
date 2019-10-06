@@ -1,7 +1,9 @@
 class BaseConfig:
+    # TODO: change password of this before opening the code...
     MAILING_ACCOUNT0_ADDRESS = "seshat@hadware.ovh"
     MAILING_ACCOUNT0_PASSWORD = "seshatandthoth"
     SMTP_SERVER_ADDRESS = "SSL0.OVH.NET"
+    SUPPORTED_AUDIO_EXTENSIONS = ["wav", "mp3", "ogg", "flac"]
     SMTP_SERVER_PORT = 587
     OPENAPI_VERSION = "3.0.2"
     OPENAPI_URL_PREFIX = '/doc'

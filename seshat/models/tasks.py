@@ -1,7 +1,7 @@
 import zipfile
 from datetime import date
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from typing import List, Dict
 
@@ -12,7 +12,7 @@ from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
                          FloatField, IntField, EmbeddedDocumentField,
-                         PULL, DoesNotExist)
+                         PULL, DoesNotExist, NULLIFY)
 from textgrid import TextGrid, IntervalTier
 
 from seshat.models.errors import MergeConflictsError
@@ -26,6 +26,12 @@ class TaskComment(EmbeddedDocument):
     author = ReferenceField('User', required=True)
     creation = DateTimeField(default=datetime.now, required=True)
     text = StringField(required=True)
+
+    @property
+    def msg_form(self):
+        return {"author": self.author.short_profile,
+                "creation": self.creation,
+                "content": self.text}
 
 
 class FileDownload(EmbeddedDocument):
@@ -72,6 +78,10 @@ class BaseTask(Document):
     # the final annotated file, with 4 tiers
     final_tg = StringField()
 
+    # TODO : make the instruction different depending on if the audio file is in the archive or not.
+    INITIAL_TEMPLATE_INSTRUCTIONS = """Annotate the audio file using the downloadable template 
+    textgrid in the archive."""
+
     @property
     def status(self):
         return "En cours" if not self.is_done else "Terminée"
@@ -112,11 +122,15 @@ class BaseTask(Document):
             new_tg.append(new_tier)
         self.template_tg = SingleAnnotatorTextGrid.from_textgrid_obj(new_tg, [], self)
 
-    def get_starter_zip(self, user: 'Annotator') -> bytes:
+    def get_starter_zip(self) -> bytes:
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
             zip_folder: str = self.name
-            # TODO: add the audio files if the option is set
+            if self.campaign.serve_audio:
+                audio_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(self.data_file))
+                audio_arcname = Path(zip_folder) / Path(Path(self.data_file).name)
+                zfile.write(str(audio_filepath), audio_arcname)
+
             textgrid_archname = (Path(zip_folder) /
                                  Path(Path(self.data_file).stem + ".TextGrid"))
             zfile.writestr(str(textgrid_archname), self.template_tg.to_str())
@@ -139,6 +153,10 @@ class BaseTask(Document):
         self.save()
 
     @property
+    def files(self) -> Dict:
+        raise NotImplemented()
+
+    @property
     def short_status(self):
         return {"filename": self.data_file,
                 "deadline": self.deadline,
@@ -155,9 +173,6 @@ class BaseTask(Document):
     @property
     def annotator_status(self):
         raise NotImplemented()
-
-    @property
-    def adnno
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -233,6 +248,13 @@ class SingleAnnotatorTask(BaseTask):
             return "tasks_template"
         else:
             return "final"
+
+    @property
+    def files(self) -> Dict:
+        return {
+            "template": self.template_tg,
+            "final": self.final_tg
+        }
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
@@ -409,7 +431,7 @@ class DoubleAnnotatorTask(BaseTask):
                 return self.TARGET_MERGE_TIMES_INSTRUCTIONS
 
     @property
-    def files(self) -> dict:
+    def files(self) -> Dict:
         return {
             "template": self.template_tg,
             "ref": self.ref_tg,
@@ -566,3 +588,5 @@ from .users import Annotator
 
 # TODO :check that all stuff that should be delete is deleted
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)
+BaseTask.register_delete_rule('Campaign', 'tasks', PULL)
+BaseTask.register_delete_rule('BaseTextGridDocument', 'task', NULLIFY)

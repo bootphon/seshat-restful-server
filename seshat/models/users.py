@@ -5,7 +5,7 @@ from datetime import datetime
 import jwt
 from mongoengine import Document, BooleanField, StringField, ListField, \
     ReferenceField, DoesNotExist, DateTimeField, EmailField, \
-    PULL, CASCADE, NULLIFY
+    PULL, CASCADE, NULLIFY, signals
 
 from seshat.models.textgrids import BaseTextGridDocument
 from .commons import DBError
@@ -28,7 +28,6 @@ class Notification(Document):
 
 class User(Document):
     meta = {'allow_inheritance': True}
-    active = BooleanField(default=True, required=True)
 
     # User authentication information
     username = StringField(required=True, primary_key=True)
@@ -41,9 +40,14 @@ class User(Document):
     last_name = StringField(default="Nom")
     email = EmailField(required=True, unique=True)
 
-    # TODO : figure out how to delete all referenced notificaitons automatically
-    # look up register_delete_rule(document_cls, field_name, rule)
     pending_notifications = ListField(ReferenceField(Notification))
+
+    @classmethod
+    def post_delete_cleanup(cls, sender, document: 'User', **kwargs):
+        """Called upon a post_delete event. Takes care of cleaning up stuff, deleteing the user's
+        pending notifications"""
+        for notif in document.pending_notifications:
+            notif.delete()
 
     @property
     def full_name(self):
@@ -128,3 +132,4 @@ Notification.register_delete_rule(User, 'pending_notifications', PULL)
 Annotator.register_delete_rule('SingleAnnotatorTask', 'annotator', CASCADE)
 Annotator.register_delete_rule('DoubleAnnotatorTask', 'reference', CASCADE)
 Annotator.register_delete_rule('DoubleAnnotatorTask', 'target', CASCADE)
+signals.post_delete(User.post_delete_cleanup, sender=User)

@@ -7,7 +7,7 @@ from flask_rest_api import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
-from seshat.schemas.campaigns import CampaignFull
+from seshat.schemas.campaigns import CampaignFull, CampaignDeleteSchema, CampaignEditSchema, CampaignSubscriptionUpdate
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..schemas.campaigns import CampaignCreation, CampaignShort, CampaignWikiPage, CorporaListing
@@ -27,8 +27,8 @@ class AvailableCorporaHandler(AdminMethodView):
                 "csv_corpora": list_corpus_csv(Path(current_app.config["CAMPAIGNS_FILES_ROOT"]))}
 
 
-@campaigns_blp.route("create")
-class CreateCampaignHandler(AdminMethodView):
+@campaigns_blp.route("admin/")
+class CampaignAdminHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignCreation)
     @campaigns_blp.response(code=200)
@@ -62,6 +62,19 @@ class CreateCampaignHandler(AdminMethodView):
             abort(403, message="The campaign name is too close to another campaign name")
         except ValidationError as e:
             abort(403, "Invalid campaign specifications : %s" % str(e))
+
+    @campaigns_blp.arguments(CampaignDeleteSchema, as_kwargs=True)
+    @campaigns_blp.response(code=200)
+    def delete(self, slug: str):
+        campaign: Campaign = Campaign.objects(slug=slug)
+        campaign.delete()
+
+    @campaigns_blp.arguments(CampaignEditSchema, as_kwargs=True)
+    @campaigns_blp.response(code=200)
+    def put(self, slug, **kwargs):
+        campaign: Campaign = Campaign.objects(slug=slug)
+        campaign.update(**kwargs)
+        campaign.save()
 
 
 @campaigns_blp.route("list/")
@@ -100,4 +113,28 @@ class WikiViewHandler(LoggedInMethodView):
         campaign: Campaign = Campaign.objects(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
-# TODO add follow/unfollow for campaigns
+
+@campaigns_blp.route("wiki/view/<campaign_slug>")
+class WikiViewHandler(LoggedInMethodView):
+
+    @campaigns_blp.response(CampaignWikiPage)
+    def get(self, campaign_slug: str):
+        campaign: Campaign = Campaign.objects(slug=campaign_slug)
+        return {"content": campaign.wiki_page}
+
+
+@campaigns_blp.route("/subscribe")
+class CampaignSubscriptionHandler(AdminMethodView):
+
+    @campaigns_blp.arguments(CampaignSubscriptionUpdate, as_kwargs=True)
+    @campaigns_blp.response(code=200)
+    def post(self, slug: str, subscription_status : bool):
+        campaign: Campaign = Campaign.objects(slug=slug)
+        if subscription_status:
+            if self.user not in campaign.subscribers:
+                campaign.subscribers.append(self.user)
+                campaign.save()
+        else:
+            if self.user in campaign.subscribers:
+                campaign.subscribers.remove(self.user)
+                campaign.save()

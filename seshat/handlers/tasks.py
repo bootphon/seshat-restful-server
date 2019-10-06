@@ -115,7 +115,7 @@ class ValidateTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
     @tasks_blp.response(TextgridErrors)
-    def post(self, args):
+    def post(self, task_id: str, args):
         task: BaseTask = BaseTask.objects(task_id=task_id)
         error_log.flush()
         task.validate_textgrid(args["textgrid_str"], self.user)
@@ -127,9 +127,11 @@ class TaskCommentHandler(LoggedInMethodView):
 
     @tasks_blp.response(TaskComment(many=True))
     def get(self, task_id: str):
-        pass
+        task: BaseTask = BaseTask.objects(task_id=task_id)
+        return [comment.msg_form for comment in task]
 
-    @tasks_blp.arguments(TaskCommentSubmission)
+    @tasks_blp.arguments(TaskCommentSubmission, as_kwargs=True)
     @tasks_blp.response(code=200)
-    def post(self, args, task_id: str):
-        pass
+    def post(self, content, task_id: str):
+        task: BaseTask = BaseTask.objects(task_id=task_id)
+        task.add_comment(content, self.user)

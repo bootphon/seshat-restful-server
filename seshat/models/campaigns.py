@@ -1,18 +1,21 @@
 import zipfile
 from collections import Counter
+from csv import DictReader
 from datetime import datetime
+from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
+from typing import Dict
 
-from flask import current_app as app
+import ffmpeg
+from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
-                         PULL, DateTimeField, DoesNotExist, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
-                         ValidationError)
-from slugify import slugify
+                         DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
+                         ValidationError, NULLIFY, signals)
 
 from seshat.models import BaseTask
+from .textgrids import BaseTextGridDocument
 from seshat.utils import percentage
-from .commons import DBError
 from .tg_checking import TextGridCheckingScheme
 
 
@@ -42,24 +45,62 @@ class Campaign(Document):
     # updated on trigger
     stats = EmbeddedDocumentField(CampaignStats)
 
-
     def validate(self, clean=True):
         if self.corpus_type == "csv" and self.serve_audio:
             raise ValidationError("Can't serve audio files with a csv corpus")
+        super().validate(clean)
+
+    @classmethod
+    def post_delete_cleanup(cls, sender, document: 'Campaign', **kwargs):
+        """Called upon a post_delete event. Takes care of cleaning up stuff, deleting the campaigns's
+        child tasks"""
+        for task in document.tasks:
+            task.delete()
+
+    @property
+    def real_corpus_path(self):
+        return Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(self.corpus_path)
 
     @property
     def corpus_type(self) -> str:
-        raise NotImplemented()
+        corpus_path = self.real_corpus_path
+        if corpus_path.is_dir():
+            return "folder"
+        elif corpus_path.is_file() and corpus_path.suffix == ".csv":
+            return "csv"
+        else:
+            raise ValueError("Corpus isn't csv file or data folder")
+
+    @property
+    @lru_cache(maxsize=1000) # TODO : maybe tweak this caching value?
+    def csv_table(self):
+        csv_path = self.real_corpus_path
+        with open(str(csv_path), "r") as csv_data_file:
+            reader = DictReader(csv_data_file)
+            return {row["filename"]: float(row["duration"]) for row in reader}
+
+    def get_file_duration(self, filename: str):
+        if self.corpus_type == "csv":
+            return self.csv_table[filename]
+        else:
+            filepath = Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(filename)
+            return float(ffmpeg.probe(str(filepath))["format"]["duration"])
 
     def populate_audio_files(self):
-        # TODO: change this to work with CSV files as well
-        # with open(str(filepath), "r") as csv_data_file:
-        #     reader = DictReader(csv_data_file)
-        #     if not set(reader.fieldnames) == {"filename", "duration"}:
-        #         logging.warning("CSV file %s doesn't have the right headers")
-        # TODO: datah path is not valid anymore, use  Path(app.config["CAMPAIGNS_FILES_ROOT"]) / Path(folder)
-        p = Path(self.data_path)
-        return [Path(*f.parts[1:]) for f in p.glob("**/*") if f.suffix == ".wav"]
+        if self.corpus_type == "csv":
+            with open(str(self.real_corpus_path), "r") as csv_data_file:
+                reader = DictReader(csv_data_file)
+                if not set(reader.fieldnames) == {"filename", "duration"}:
+                    raise ValueError("The CSV data file doesn't have the right headers (filename and duration)")
+                return [row["filename"] for row in reader]
+
+        else:  # it's an audio file tree
+            audio_files = []
+            authorized_extensions = current_app.config["SUPPORTED_AUDIO_EXTENSIONS"]
+            for filepath in self.real_corpus_path.glob("**/*"):
+                if filepath.suffix.strip(".") in authorized_extensions:
+                    audio_files.append(str(Path(*filepath.parts[1:])))
+            return audio_files
 
     def _tasks_for_file(self, audio_file: str):
         tasks = [task for task in self.tasks]
@@ -67,9 +108,9 @@ class Campaign(Document):
 
     @property
     def files(self):
-        return [{"path": str(file_path),
-                 "tasks_count": self._tasks_for_file(str(file_path)),
-                 "type": file_path.suffix.strip(".")
+        return [{"path": file_path,
+                 "tasks_count": self._tasks_for_file(file_path),
+                 "type": Path(file_path).suffix.strip(".")
                  }
                 for file_path in self.populate_audio_files()]
 
@@ -135,5 +176,5 @@ class Campaign(Document):
     def full_summary(self):
         raise NotImplemented()
 
-
-BaseTask.register_delete_rule(Campaign, 'tasks', PULL)
+Campaign.register_delete_rule(BaseTextGridDocument, "campaign", NULLIFY)
+signals.post_delete(Campaign.post_delete_cleanup, sender=Campaign)

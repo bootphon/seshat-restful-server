@@ -27,7 +27,6 @@ class CampaignCreation(Schema):
     name = fields.Str(required=True, validate=validate.Length(max=100))
     description = fields.Str()
     # these two field are exclusive to one another
-    # TODO : validate that one XOR the other is present
     data_csv = fields.Str()
     data_folder = fields.Str()
     enable_audio_dl = fields.Bool(required=True)
@@ -38,6 +37,16 @@ class CampaignCreation(Schema):
     def validate_data_fields(self, data):
         if data.get("data_csv") is not None and data.get("data_folder") is not None:
             raise ValidationError("Data has to be either CSV or a folder but not both")
+
+
+class CampaignDeleteSchema(Schema):
+    slug = fields.Str(required=True)
+
+
+class CampaignEditSchema(Schema):
+    slug = fields.Str(required=True)
+    description = fields.Str(required=True)
+    name = fields.Str(required=True)
 
 
 class CampaignShort(Schema):
@@ -57,3 +66,9 @@ class CampaignFull(CampaignShort):
 
 class CampaignWikiPage(Schema):
     content = fields.Str()
+
+
+class CampaignSubscriptionUpdate(Schema):
+    slug = fields.Str(required=True)
+    # true is subscribe, false is unsubscribe
+    subscription_status = fields.Bool(required=True)

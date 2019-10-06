@@ -70,7 +70,7 @@ class LockAnnotatorHandler(AdminMethodView):
 
     @users_blp.arguments(AnnotatorLockRequest, as_kwargs=True)
     @users_blp.response(code=200)
-    def post(self, username : str, lock_status: bool):
+    def post(self, username: str, lock_status: bool):
         user: Annotator = Annotator.objects(username=username)
         user.locked = lock_status
         user.save()
