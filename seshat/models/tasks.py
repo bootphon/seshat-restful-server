@@ -585,8 +585,7 @@ class DoubleAnnotatorTask(BaseTask):
 
 
 from .users import Annotator
-
+from .textgrids import BaseTextGridDocument
 # TODO :check that all stuff that should be delete is deleted
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)
-BaseTask.register_delete_rule('Campaign', 'tasks', PULL)
-BaseTask.register_delete_rule('BaseTextGridDocument', 'task', NULLIFY)
+BaseTask.register_delete_rule(BaseTextGridDocument, 'task', NULLIFY)

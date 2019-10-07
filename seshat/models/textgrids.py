@@ -311,6 +311,3 @@ class MergedTimesTextGrid(MergedAnnotsTextGrid):
         self.check_annotations()
         self.check_annotations_matching()
         self.check_times_merging()
-
-
-BaseTextGridDocument.register_delete_rule('BaseTask', )

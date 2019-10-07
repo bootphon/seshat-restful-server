@@ -13,7 +13,7 @@ class GetBaseAdminStatisticsHandler(AdminMethodView):
         pass
 
 
-@analytics_blp.route("/completed/<campain_slug>")
+@analytics_blp.route("/complete/<campain_slug>")
 class GetCompletedFiles(AdminMethodView):
 
     def get(self, campain_slug: str):

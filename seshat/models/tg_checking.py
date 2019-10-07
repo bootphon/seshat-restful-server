@@ -1,14 +1,15 @@
 """Schemas that define how a TextGrid should be checked"""
 from typing import Dict
 
-from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField
+from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
+    EmbeddedDocument
 from textgrid import IntervalTier
 
 from seshat.models.errors import error_log
 from ..parsers.base import CategoricalChecker, parser_factory, AnnotationError, AnnotationChecker
 
 
-class TierScheme(EmbeddedDocumentField):
+class TierScheme(EmbeddedDocument):
     meta = {"allow_inheritance": True}
     name = StringField(required=True)
     # tier has to be there for the file to be valid

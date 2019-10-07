@@ -32,7 +32,7 @@ class ManageAnnotatorHandler(AdminMethodView):
             abort(403, message="Username or email already present in database")
 
     @users_blp.arguments(AnnotatorDeletion, as_kwargs=True)
-    @users_blp.response(200)
+    @users_blp.response(code=200)
     def delete(self, username: str):
         """Deletes an existing user"""
         try:
@@ -71,6 +71,7 @@ class LockAnnotatorHandler(AdminMethodView):
     @users_blp.arguments(AnnotatorLockRequest, as_kwargs=True)
     @users_blp.response(code=200)
     def post(self, username: str, lock_status: bool):
+        """Locks or unlocks an annotator's account"""
         user: Annotator = Annotator.objects(username=username)
         user.locked = lock_status
         user.save()
@@ -81,4 +82,5 @@ class ListAnnotatorsHandler(AdminMethodView):
 
     @users_blp.response(AnnotatorShortProfile(many=True))
     def get(self):
+        """Lists all annotators registered in DB"""
         return [user.short_profile for user in Annotator.objects]

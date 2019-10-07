@@ -23,6 +23,7 @@ class AvailableCorporaHandler(AdminMethodView):
 
     @campaigns_blp.response(CorporaListing)
     def get(self):
+        """Get a list of available folder and CSV corpora"""
         return {"folders_corpora": list_subdirs(Path(current_app.config["CAMPAIGNS_FILES_ROOT"])),
                 "csv_corpora": list_corpus_csv(Path(current_app.config["CAMPAIGNS_FILES_ROOT"]))}
 
@@ -33,6 +34,7 @@ class CampaignAdminHandler(AdminMethodView):
     @campaigns_blp.arguments(CampaignCreation)
     @campaigns_blp.response(code=200)
     def post(self, args: Dict):
+        """Creates a new campaign"""
         try:
             checking_scheme: TextGridCheckingScheme = TextGridCheckingScheme.from_tierspecs_schema(
                 scheme_data=args["checking_scheme"],
@@ -66,12 +68,14 @@ class CampaignAdminHandler(AdminMethodView):
     @campaigns_blp.arguments(CampaignDeleteSchema, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def delete(self, slug: str):
+        """Delete a campaign"""
         campaign: Campaign = Campaign.objects(slug=slug)
         campaign.delete()
 
     @campaigns_blp.arguments(CampaignEditSchema, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def put(self, slug, **kwargs):
+        """Update a campaign"""
         campaign: Campaign = Campaign.objects(slug=slug)
         campaign.update(**kwargs)
         campaign.save()
@@ -82,14 +86,16 @@ class ListCampaignsHandler(AdminMethodView):
 
     @campaigns_blp.response(CampaignShort(many=True))
     def get(self):
+        """List all created campaigns, in summary form"""
         return [campaign.short_summary for campaign in Campaign.objects]
 
 
 @campaigns_blp.route("view/<campaign_slug>")
-class ListCampaignsHandler(AdminMethodView):
+class ViewCampaignHandler(AdminMethodView):
 
     @campaigns_blp.response(CampaignFull)
     def get(self, campaign_slug: str):
+        """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects(slug=campaign_slug)
         return campaign.full_summary
 
@@ -100,6 +106,7 @@ class WikiUpdateHandler(AdminMethodView):
     @campaigns_blp.arguments(CampaignWikiPage, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def post(self, content: str, campaign_slug: str):
+        """Update the campaign's wiki page"""
         campaign: Campaign = Campaign.objects(slug=campaign_slug)
         campaign.wiki_page = content
         campaign.save()
@@ -110,6 +117,7 @@ class WikiViewHandler(LoggedInMethodView):
 
     @campaigns_blp.response(CampaignWikiPage)
     def get(self, campaign_slug: str):
+        """View a campaign's wiki page"""
         campaign: Campaign = Campaign.objects(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
@@ -119,6 +127,7 @@ class WikiViewHandler(LoggedInMethodView):
 
     @campaigns_blp.response(CampaignWikiPage)
     def get(self, campaign_slug: str):
+        """Retrieve the campaign's wikipage content"""
         campaign: Campaign = Campaign.objects(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
@@ -128,7 +137,8 @@ class CampaignSubscriptionHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignSubscriptionUpdate, as_kwargs=True)
     @campaigns_blp.response(code=200)
-    def post(self, slug: str, subscription_status : bool):
+    def post(self, slug: str, subscription_status: bool):
+        """Subscribes or unsubscribes an admin from a campaign"""
         campaign: Campaign = Campaign.objects(slug=slug)
         if subscription_status:
             if self.user not in campaign.subscribers:

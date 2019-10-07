@@ -3,6 +3,8 @@ from typing import Dict
 
 from flask_rest_api import Blueprint, abort
 from flask import current_app
+
+from seshat.schemas.tasks import TaskFullAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from ..models import SingleAnnotatorTask, DoubleAnnotatorTask, Annotator, Campaign, BaseTask
 from ..models.errors import error_log
@@ -29,6 +31,7 @@ class AssignTasksHandler(AdminMethodView):
     @tasks_blp.arguments(TaskAssignment(many=True))
     @tasks_blp.response(code=200)
     def post(self, args: Dict):
+        """Assign annotating tasks (linked to an audio file) to annotators"""
         campaign = Campaign.objects(slug=args["campaign"])
         if args.get("single_annot_assign") is not None:
             annotator = Annotator.objects(username=args["single_annot_assign"]["annotator"])
@@ -66,6 +69,7 @@ class DeleteTaskHandler(AdminMethodView):
 
     @tasks_blp.response(code=200)
     def delete(self, task_id: str):
+        """Delete an assigned task"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
         task.delete()
 
@@ -76,6 +80,7 @@ class LockTaskHandler(AdminMethodView):
     @tasks_blp.arguments(TaskLockRequest, as_kwargs=True)
     @tasks_blp.response(code=200)
     def post(self, task_id: str, lock_status: bool):
+        """Lock a task, preventing a user from making any change to it"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
         task.is_locked = lock_status
         task.save()
@@ -86,6 +91,7 @@ class GetAdminTaskDataHandler(AdminMethodView):
 
     @tasks_blp.response(TaskFullAdmin)
     def get(self, task_id: str):
+        """Returns the full task status for the admin task view"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
         return task.admin_status
 
@@ -93,7 +99,9 @@ class GetAdminTaskDataHandler(AdminMethodView):
 @tasks_blp.route("/status/annotator/<task_id>")
 class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 
+    @tasks_blp.response(TaskFullAnnotator)
     def get(self, task_id: str):
+        """Returns the annotator's task status, for the annotator task view"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
         return task.annotator_status
 
@@ -102,9 +110,12 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
-    @tasks_blp.response(TextgridErrors)
+    @tasks_blp.response(TextgridErrors, code=403)
     def post(self, args, task_id: str):
+        """Textgridsubmission handler"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
+        if task.is_locked:
+            return
         error_log.flush()
         task.submit_textgrid(args["textgrid_str"], self.user)
         return error_log.to_errors_summary()
@@ -116,7 +127,11 @@ class ValidateTaskFileHandler(AnnotatorMethodView):
     @tasks_blp.arguments(TaskTextgridSubmission)
     @tasks_blp.response(TextgridErrors)
     def post(self, task_id: str, args):
+        """Submits a textgrid to a task. The task will figure out by itself
+        the current step it's supposed to belong to, and return any validation error"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
+        if task.is_locked:
+            return
         error_log.flush()
         task.validate_textgrid(args["textgrid_str"], self.user)
         return error_log.to_errors_summary()
@@ -127,11 +142,15 @@ class TaskCommentHandler(LoggedInMethodView):
 
     @tasks_blp.response(TaskComment(many=True))
     def get(self, task_id: str):
+        """Retrieves the list of comments for a task"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
         return [comment.msg_form for comment in task]
 
     @tasks_blp.arguments(TaskCommentSubmission, as_kwargs=True)
     @tasks_blp.response(code=200)
     def post(self, content, task_id: str):
+        """Adds a comment to a task"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
+        if task.is_locked:
+            return
         task.add_comment(content, self.user)

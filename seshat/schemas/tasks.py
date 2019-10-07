@@ -38,6 +38,7 @@ class TaskShort(Schema):
     assigner = fields.Str(required=True)
     creation_time = fields.DateTime(required=True)
     status = fields.Str(required=True)
+    is_locked = fields.Bool(required=True)
 
 
 class TaskTextGrid(Schema):
@@ -96,10 +97,12 @@ class TaskTextgridSubmission(Schema):
 
 
 class AnnotationErrors(Schema):
+    # TODO
     pass
 
 
 class StructuralError(Schema):
+    # TODO
     pass
 
 

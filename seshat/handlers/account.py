@@ -1,8 +1,8 @@
 from flask.views import MethodView
 from flask_rest_api import Blueprint
 from mongoengine import Q
-from tools.models import User
-from tools.schemas.users import LoginCredentials, ConnectionToken, \
+from ..models import User
+from ..schemas.users import LoginCredentials, ConnectionToken, \
     NotificationData, NotificationDelete
 
 from .commons import LoggedInMethodView
@@ -18,6 +18,7 @@ class LoginHandler(MethodView):
     @accounts_blp.arguments(LoginCredentials)
     @accounts_blp.response(ConnectionToken, code=401)
     def post(self, args):
+        """Log in to the account. Returns the connection token"""
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
         if user is None:
             return  # returns a 401 error
@@ -33,6 +34,7 @@ class LogoutHandler(LoggedInMethodView):
 
     @accounts_blp.response(code=200)
     def post(self):
+        """Log out form the server. Flushes the annotator's cookie"""
         self.user.delete_token()
 
 
@@ -41,11 +43,12 @@ class NotificationsHandler(LoggedInMethodView):
 
     @accounts_blp.response(NotificationData(many=True))
     def get(self):
+        """Retrieve the user's notifications"""
         return [notif.to_msg() for notif in self.user.pending_notifications]
 
     @accounts_blp.arguments(NotificationDelete)
     @accounts_blp.response(code=200)
     def delete(self, args):
-        notif: Notification = Notification.objects. \
-            get(id=args["notif_id"])
+        """Delete a user's notification"""
+        notif: Notification = Notification.objects.get(id=args["notif_id"])
         notif.delete()

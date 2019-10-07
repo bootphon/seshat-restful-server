@@ -45,31 +45,9 @@ class TextgridAnnotationError(TextGridError):
     @property
     def header(self):
         return (
-                "Erreur dans le Tier \"%s\" , annotation n°%i (de %0.3f à %0.3f)" %
+                "Annotation error in tier \"%s\" , annotation #%i (from %0.3f to %0.3f)" %
                 (self.tier, self.idx + 1, self.interval.minTime,
                  self.interval.maxTime))
-
-
-class PatientAnnotationError(TextgridAnnotationError):
-
-    def __init__(self, tier: str, annot_idx: int, interval: Interval,
-                 msg: str, task: str):
-        super().__init__(tier, annot_idx, interval, msg)
-        self.task = task
-
-    def to_dict(self):
-        out = super().to_dict()
-        out.update({
-            "task": self.task
-        })
-        return out
-
-    @property
-    def header(self):
-        return (
-                "Erreur d'annotation le Tier \"%s\" , interval n°%i (de %0.3f à %0.3f), pour la tâche %s" %
-                (self.tier, self.idx + 1, self.interval.minTime,
-                 self.interval.maxTime, self.task))
 
 
 class TextgridAnnotationMismatch(TextGridError):
@@ -97,17 +75,16 @@ class TextgridAnnotationMismatch(TextGridError):
 
     @property
     def header(self):
-        return ("Erreur de correspondance entre les Tiers \"%s\" et \"%s\" , "
-                "annotation n°%i (de %0.3f à %0.3f et de %0.3f à %0.3f)" %
+        return ("Annotation mismatch between Tiers \"%s\" and \"%s\","
+                " annotation #%i (from %0.3f to %0.3f and from %0.3f to %0.3f)" %
                 (self.ref_tier, self.target_tier, self.idx + 1,
                  self.ref_inter.minTime, self.ref_inter.minTime,
                  self.target_inter.minTime, self.target_inter.minTime))
 
     @property
     def msg(self):
-        return ("L'annotation ref '%s' n'est pas égale "
-                "à l'annotation target '%s'" % (self.ref_inter.mark,
-                                                self.target_inter.mark))
+        return ("Reference annotation %s ins't the same as target annotation %s"
+                % (self.ref_inter.mark, self.target_inter.mark))
 
 
 class MergeConflictsError(TextGridError):
@@ -136,19 +113,18 @@ class MergeConflictsError(TextGridError):
 
     @property
     def header(self):
-        return ("Conflit de fusion entre les Tiers %s et %s, entre les "
-                "intervalles %i et %i" % (self.tier_a, self.tier_b,
-                                          self.index_before, self.index_after))
+        return ("Merge conflict between tiers %s and %s, at the frontier between interval %i and %i"
+                % (self.tier_a, self.tier_b, self.index_before, self.index_after))
 
     @property
     def msg(self):
-        from .basal_voice_tg import MergedTimesTextGridChecker
+        from ..models import MergedAnnotsTextGrid
         max_time = max((self.time_a, self.time_b))
         min_time = min((self.time_a, self.time_b))
-        return ("Impossible de fusionner la frontière entre les intervalles "
-                "n°%i et n°%i (%fs - %fs > %fs), entre les tiers %s et %s." %
+        return ("Impossible to merge frontiers between intervals "
+                "#°%i and #°%i (%fs - %fs > %fs), between tiers %s and %s." %
                 (self.index_before, self.index_after, max_time, min_time,
-                 MergedTimesTextGridChecker.DIFF_THRESHOLD, self.tier_a,
+                 MergedAnnotsTextGrid.DIFF_THRESHOLD, self.tier_a,
                  self.tier_b))
 
 
@@ -221,6 +197,7 @@ class ErrorsLog:
                    in [self.structural, self.annot, self.mismatch, self.timing])
 
     def to_errors_summary(self):
+        # TODO
         raise NotImplemented()
 
 error_log = ErrorsLog()

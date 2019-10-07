@@ -11,9 +11,9 @@ import ffmpeg
 from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
-                         ValidationError, NULLIFY, signals)
+                         ValidationError, NULLIFY, signals, PULL)
 
-from seshat.models import BaseTask
+from .tasks import BaseTask
 from .textgrids import BaseTextGridDocument
 from seshat.utils import percentage
 from .tg_checking import TextGridCheckingScheme
@@ -177,4 +177,5 @@ class Campaign(Document):
         raise NotImplemented()
 
 Campaign.register_delete_rule(BaseTextGridDocument, "campaign", NULLIFY)
-signals.post_delete(Campaign.post_delete_cleanup, sender=Campaign)
+signals.post_delete.connect(Campaign.post_delete_cleanup, sender=Campaign)
+BaseTask.register_delete_rule(Campaign, 'tasks', PULL)

@@ -127,9 +127,9 @@ class Annotator(User):
     def compute_stats(self):
         pass
 
-
+from .tasks import SingleAnnotatorTask, DoubleAnnotatorTask
 Notification.register_delete_rule(User, 'pending_notifications', PULL)
-Annotator.register_delete_rule('SingleAnnotatorTask', 'annotator', CASCADE)
-Annotator.register_delete_rule('DoubleAnnotatorTask', 'reference', CASCADE)
-Annotator.register_delete_rule('DoubleAnnotatorTask', 'target', CASCADE)
-signals.post_delete(User.post_delete_cleanup, sender=User)
+Annotator.register_delete_rule(SingleAnnotatorTask, 'annotator', CASCADE)
+Annotator.register_delete_rule(DoubleAnnotatorTask, 'reference', CASCADE)
+Annotator.register_delete_rule(DoubleAnnotatorTask, 'target', CASCADE)
+signals.post_delete.connect(User.post_delete_cleanup, sender=User)
