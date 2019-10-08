@@ -1,15 +1,6 @@
 from typing import List
 
 
-class DBError(Exception):
-    """Exception raised when there is something wrong with the db,
-    that should be displayed on the client"""
-
-    def __init__(self, msg: str, *args):
-        super().__init__(*args)
-        self.msg = msg
-
-
 def notif_dispatch(message: str,
                    notif_type: str,
                    url: str,

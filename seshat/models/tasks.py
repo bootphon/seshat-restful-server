@@ -1,5 +1,4 @@
 import zipfile
-from datetime import date
 from datetime import datetime
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -12,12 +11,12 @@ from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
                          FloatField, IntField, EmbeddedDocumentField,
-                         PULL, DoesNotExist, NULLIFY)
+                         PULL, NULLIFY)
 from textgrid import TextGrid, IntervalTier
 
 from seshat.models.errors import MergeConflictsError
 from seshat.models.textgrids import MergedAnnotsTextGrid
-from .commons import notif_dispatch, DBError
+from .commons import notif_dispatch
 from .errors import error_log
 from .textgrids import MergedTimesTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid
 
@@ -74,9 +73,9 @@ class BaseTask(Document):
 
     # Only contains one Tier ("Task")  of the audio file's length
     # with nothing in it.
-    template_tg = StringField(required=True)
+    template_tg = ReferenceField(BaseTextGridDocument)
     # the final annotated file, with 4 tiers
-    final_tg = StringField()
+    final_tg = ReferenceField(BaseTextGridDocument)
 
     # TODO : make the instruction different depending on if the audio file is in the archive or not.
     INITIAL_TEMPLATE_INSTRUCTIONS = """Annotate the audio file using the downloadable template 

@@ -10,7 +10,7 @@ from ..models import SingleAnnotatorTask, DoubleAnnotatorTask, Annotator, Campai
 from ..models.errors import error_log
 from ..schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
     TaskComment, TaskCommentSubmission, \
-    TaskTextgridSubmission, TextgridErrors, TaskLockRequest
+    TaskTextgridSubmission, TextGridErrors, TaskLockRequest
 
 tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
                       description="Operations to manage, interact with and display tasks")
@@ -45,19 +45,18 @@ class AssignTasksHandler(AdminMethodView):
                           "target": target}
 
         for file in args["audio_files"]:
-            new_task = task_class(**annotators)
-
-            actual_filepath = (Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(audio_file))
-            # TODO : use the campaign to retrieve the file duration
-            # TODO : use the campaign's textgrid checker to figure out which tiers to use
-            # TODO : generate the template, don't forget to save it
+            new_task: BaseTask = task_class(**annotators)
+            template_doc = campaign.gen_template_tg(file)
+            template_doc.save()
             new_task.campaign = campaign
+            new_task.template_tg = template_doc
             new_task.deadline = args["deadline"]
             new_task.save()
+            template_doc.task = new_task
+            template_doc.save()
             campaign.tasks.append(new_task)
             for user in annotators.values():
                 user.assigned_tasks.append(new_task)
-        abort(400)
         task_class.notify_assign(list(annotators.values()), campaign)
         campaign.save()
         for user in annotators.values():
@@ -110,7 +109,7 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
-    @tasks_blp.response(TextgridErrors, code=403)
+    @tasks_blp.response(TextGridErrors, code=403)
     def post(self, args, task_id: str):
         """Textgridsubmission handler"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
@@ -125,7 +124,7 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
 class ValidateTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
-    @tasks_blp.response(TextgridErrors)
+    @tasks_blp.response(TextGridErrors, code=403)
     def post(self, task_id: str, args):
         """Submits a textgrid to a task. The task will figure out by itself
         the current step it's supposed to belong to, and return any validation error"""

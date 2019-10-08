@@ -97,17 +97,39 @@ class TaskTextgridSubmission(Schema):
 
 
 class AnnotationErrors(Schema):
-    # TODO
-    pass
+    tier = fields.Str(required=True)
+    msg = fields.Str(required=True)
+    annotation = fields.Str(required=True)
+    index = fields.Int(required=True)
+    start = fields.Float(required=True)
+    end = fields.Float(required=True)
 
 
 class StructuralError(Schema):
-    # TODO
-    pass
+    msg = fields.Str(required=True)
 
 
-class TextgridErrors(Schema):
-    # TODO: add merge error and annotation mismatch errors
-    structural_errors = fields.List(fields.Nested(StructuralError))
-    annot_errors = fields.Dict(keys=fields.Str(),
-                               values=fields.Nested(AnnotationErrors))
+class AnnotMismatchError(Schema):
+    ref_tier = fields.Str(required=True)
+    target_tier = fields.Str(required=True)
+    ref_annot = fields.Str(required=True)
+    target_annot = fields.Str(required=True)
+    index = fields.Int(required=True)
+
+
+class TimeMergeError(Schema):
+    tier_a = fields.Str(required=True)
+    tier_b = fields.Str(required=True)
+    time_a = fields.Int(required=True)
+    time_b = fields.Int(required=True)
+    index_before = fields.Int(required=True)
+    index_after = fields.Int(required=True)
+    threshold = fields.Float(required=True)
+
+
+class TextGridErrors(Schema):
+    structural = fields.List(fields.Nested(StructuralError))
+    annot_mismatch = fields.List(fields.Nested(AnnotMismatchError))
+    time_conflict = fields.List(fields.Nested(TimeMergeError))
+    annot = fields.Dict(keys=fields.Str(),
+                        values=fields.Nested(AnnotationErrors))

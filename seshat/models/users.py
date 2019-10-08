@@ -4,11 +4,8 @@ from datetime import datetime
 
 import jwt
 from mongoengine import Document, BooleanField, StringField, ListField, \
-    ReferenceField, DoesNotExist, DateTimeField, EmailField, \
-    PULL, CASCADE, NULLIFY, signals
-
-from seshat.models.textgrids import BaseTextGridDocument
-from .commons import DBError
+    ReferenceField, DateTimeField, EmailField, \
+    PULL, CASCADE, signals
 
 
 class Notification(Document):
@@ -126,6 +123,7 @@ class Annotator(User):
 
     def compute_stats(self):
         pass
+
 
 from .tasks import SingleAnnotatorTask, DoubleAnnotatorTask
 Notification.register_delete_rule(User, 'pending_notifications', PULL)

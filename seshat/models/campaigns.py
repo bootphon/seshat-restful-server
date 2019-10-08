@@ -12,9 +12,10 @@ from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
                          ValidationError, NULLIFY, signals, PULL)
+from textgrid import TextGrid
 
 from .tasks import BaseTask
-from .textgrids import BaseTextGridDocument
+from .textgrids import BaseTextGridDocument, SingleAnnotatorTextGrid
 from seshat.utils import percentage
 from .tg_checking import TextGridCheckingScheme
 
@@ -39,7 +40,7 @@ class Campaign(Document):
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
     # this object stores the campaign annotation checking scheme
-    checking_scheme = ReferenceField(TextGridCheckingScheme)
+    checking_scheme: TextGridCheckingScheme = ReferenceField(TextGridCheckingScheme)
     # if this is false, textgrid aren't checked (except for the merge part)
     check_textgrids = BooleanField(default=True)
     # updated on trigger
@@ -148,6 +149,14 @@ class Campaign(Document):
         all_assignments = map(lambda x: x.username, all_assignments)
         assignments_counts = Counter(all_assignments)
         self.stats["assignments_counts"] = assignments_counts
+
+    def gen_template_tg(self, filename: str) -> SingleAnnotatorTextGrid:
+        file_duration = self.get_file_duration(filename)
+        if self.checking_scheme is None:
+            tg = TextGrid(name=filename, maxTime=file_duration)
+        else:
+            tg = self.checking_scheme.gen_template_tg(file_duration, filename)
+        return SingleAnnotatorTextGrid.from_textgrid_obj(tg, [self.creator], None)
 
     def get_full_annots_archive(self):
         buffer = BytesIO()

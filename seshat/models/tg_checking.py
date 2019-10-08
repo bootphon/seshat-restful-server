@@ -3,7 +3,7 @@ from typing import Dict
 
 from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
     EmbeddedDocument
-from textgrid import IntervalTier
+from textgrid import IntervalTier, TextGrid
 
 from seshat.models.errors import error_log
 from ..parsers.base import CategoricalChecker, parser_factory, AnnotationError, AnnotationChecker
@@ -56,7 +56,7 @@ class TextGridCheckingScheme(Document):
     name = StringField(required=True)
     # mapping: tier_name -> specs
     tiers_specs = MapField(EmbeddedDocumentField(TierScheme))
-    # empty tiers can be dropped at mergin
+    # empty tiers can be dropped at merging
     drop_empty_tiers = BooleanField(default=False)
     # for now this isn't set. In the future it'll be a a pluginizable class that can handle checking outside
     # of the defined generic framework
@@ -77,3 +77,13 @@ class TextGridCheckingScheme(Document):
 
     def get_tier_scheme(self, tier_name: str) -> TierScheme:
         return self.tiers_specs[tier_name]
+
+    def gen_template_tg(self, duration: float, filename: str):
+        new_tg = TextGrid(name=filename,
+                          minTime=0.0,
+                          maxTime=duration)
+        for tier_name in self.tiers_specs.keys():
+            new_tier = IntervalTier(name=tier_name, minTime=0.0, maxTime=duration)
+            new_tg.append(new_tier)
+
+        return new_tier
