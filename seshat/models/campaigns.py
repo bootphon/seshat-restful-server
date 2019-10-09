@@ -73,7 +73,7 @@ class Campaign(Document):
             raise ValueError("Corpus isn't csv file or data folder")
 
     @property
-    @lru_cache(maxsize=1000) # TODO : maybe tweak this caching value?
+    @lru_cache(maxsize=1024) # TODO : maybe tweak this caching value?
     def csv_table(self):
         csv_path = self.real_corpus_path
         with open(str(csv_path), "r") as csv_data_file:
@@ -179,11 +179,22 @@ class Campaign(Document):
 
     @property
     def short_summary(self):
-        raise NotImplemented()
+        return {
+            "name": self.name,
+            "total_tasks": len(self.tasks),
+            "completed_tasks": len([task for task in self.tasks if task.is_done]),
+            "total_files": len(self.populate_audio_files()),
+            "assigned_files": len(set(task.data_file for task in self.tasks)),
+            "corpus_path": self.corpus_path,
+            "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
+            "check_textgrids": self.check_textgrids
+        }
 
     @property
     def full_summary(self):
-        raise NotImplemented()
+        out = self.short_summary
+        out["tasks"] = [task.short_status for task in self.tasks]
+        return out
 
 Campaign.register_delete_rule(BaseTextGridDocument, "campaign", NULLIFY)
 signals.post_delete.connect(Campaign.post_delete_cleanup, sender=Campaign)

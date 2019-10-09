@@ -1,12 +1,12 @@
 import zipfile
 from datetime import datetime
+from enum import Enum
 from io import BytesIO, StringIO
 from pathlib import Path
 from typing import List, Dict
 
 import ffmpeg
 from flask import current_app
-from flask import url_for
 from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
@@ -27,7 +27,7 @@ class TaskComment(EmbeddedDocument):
     text = StringField(required=True)
 
     @property
-    def msg_form(self):
+    def to_msg(self):
         return {"author": self.author.short_profile,
                 "creation": self.creation,
                 "content": self.text}
@@ -77,13 +77,24 @@ class BaseTask(Document):
     # the final annotated file, with 4 tiers
     final_tg = ReferenceField(BaseTextGridDocument)
 
+    class Steps(Enum):
+        AWAITING_START = 1
+        IN_PROGRESS = 2
+        DONE = 3
+
+    steps_names = {
+        Steps.AWAITING_START: "Awaiting start",
+        Steps.IN_PROGRESS: "In Progress",
+        Steps.DONE: "Done"
+    }
+
     # TODO : make the instruction different depending on if the audio file is in the archive or not.
     INITIAL_TEMPLATE_INSTRUCTIONS = """Annotate the audio file using the downloadable template 
     textgrid in the archive."""
 
     @property
-    def status(self):
-        return "En cours" if not self.is_done else "Terminée"
+    def current_step(self):
+        return self.Steps.IN_PROGRESS if not self.is_done else self.Steps.DONE
 
     @property
     def annotators(self):
@@ -163,15 +174,23 @@ class BaseTask(Document):
                 "annotators": [user.id for user in self.annotators],
                 "assigner": self.assigner.id,
                 "creation_time": self.creation_time,
-                "status": self.status}
+                "status": self.steps_names[self.current_step]}
 
     @property
     def admin_status(self):
-        raise NotImplemented()
+        return {**self.short_status,
+                "textgrids": [{"name": name, "is_done": bool(tg)}
+                              for name, tg in self.files
+                              if isinstance(tg, BaseTextGridDocument)],
+                "comments": [comment.to_msg() for comment in self.discussion]
+        }
 
     @property
     def annotator_status(self):
-        raise NotImplemented()
+        # TODO
+        return {**self.short_status,
+                "all_statuses": list(self.steps_names.values())
+                }
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -198,10 +217,10 @@ class BaseTask(Document):
     @staticmethod
     def notify_assign(annotators: List['Annotator'], campaign: 'Campaign'):
         notif_dispatch(
-            message="Vous avez reçu des nouvelles tâches "
-                    "à faire sur la campagne %s" % campaign.name,
+            message="You were assigned new tasks on campaign %s" % campaign.name,
             notif_type="assignment",
-            url=url_for("annotator_dashboard"),
+            object_type="dashboard",
+            object_id=None,
             users=annotators)
 
     def notify_comment(self, commenter: 'User'):
@@ -209,25 +228,19 @@ class BaseTask(Document):
         notified_users: List[User] = self.annotators + self.campaign.subscribers
         notified_users.remove(commenter)
         notif_dispatch(
-            message="Un commentaire a été posté par %s sur une tâche sur le fichier %s"
+            message="Annotator %s commented on the annotation task on file %s"
                     % (commenter.full_name, self.data_file),
             notif_type="comment",
-            url=url_for("task_view", task_id=self.id),
+            object_type="task",
+            object_id=self.id,
             users=notified_users)
-
-    def notify_flagged(self, flagger: 'Annotator'):
-        notif_dispatch(
-            message="L'annotateur %s vous averti d'un problème sur la tâche du fichier %s"
-                    % (flagger.full_name, self.data_file),
-            notif_type="alert",
-            url=url_for("admin_task_view", task_id=self.id),
-            users=self.campaign.subscribers)
 
     def notify_done(self):
         notif_dispatch(
-            message="La tâche sur le fichier %s est terminée " % self.data_file,
+            message="The annotation task on file %s is done" % self.data_file,
             notif_type="finished",
-            url=url_for("admin_task_view", task_id=self.id),
+            object_type="task",
+            object_id=self.id,
             users=self.campaign.subscribers)
 
 
@@ -335,6 +348,21 @@ class DoubleAnnotatorTask(BaseTask):
     # agree on frontiers that are too "far away" from each other
     merged_times_tg = StringField()
 
+    class Steps(Enum):
+        AWAITING_START = 1
+        PARALLEL = 2
+        MERGING_ANNOTS = 3
+        MERGING_TIMES = 4
+        DONE = 5
+
+    steps_names = {
+        Steps.AWAITING_START: "Awaiting start",
+        Steps.PARALLEL: "Parallel Annotations",
+        Steps.MERGING_ANNOTS: "Merging annotations",
+        Steps.MERGING_TIMES: "Merging Times"
+    }
+
+    # TODO : translate all of these
     INITIAL_TEMPLATE_INSTRUCTIONS = \
         """Annote le fichier selon le protocole défini au préalable avec ton 
         encadrante."""
@@ -372,28 +400,28 @@ class DoubleAnnotatorTask(BaseTask):
         listées ci-dessous. La fusions se fait sur sa machine."""
 
     @property
-    def status(self):
+    def current_step(self):
         if not self.is_done:
             if self.ref_tg is None or self.target_tg is None:
-                return "Parallel annotations"
+                return self.Steps.PARALLEL
             elif self.merged_annots_tg is None:
-                return "Merging annotations"
+                return self.Steps.MERGING_ANNOTS
             else:
-                return "Merging times"
+                return self.Steps.MERGING_TIMES
         else:
-            return "Done"
+            return self.Steps.DONE
 
     @property
     def annotators(self):
         return [self.reference, self.target]
 
     def notify_merged_ready(self, annotator: 'Annotator'):
-        # TODO: tranlate this
         notif_dispatch(
-            message=("L'autre annotatrice a terminé l'annotation sur la tâche double-annotateur du fichier %s"
+            message=("The other annotator has finished their job on the double-annotation task for file %s"
                      % self.data_file),
             notif_type="finished",
-            url=url_for("annotator_task", task_id=self.id),
+            object_type="task",
+            object_id=self.id,
             users=[annotator])
 
     def current_instructions(self, user: 'Annotator') -> str:

@@ -82,8 +82,7 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
             error_log.structural("The tiers %s are missing in the TextGrid file" % " ,".join(missing_tiers))
 
         # removing all tiers that are referenced in the scheme
-        # TODO: change remove
-        tier_names.remove(set(self.checking_scheme.all_tiers_names))
+        tier_names -= set(self.checking_scheme.all_tiers_names)
 
         # remaining tiers are invalid
         if tier_names:
@@ -146,6 +145,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             # TODO: maybe make this more helpful
             error_log.structural("The names of some of the tiers in the reference and target textgrids don't match")
             return
+
          # TODO : add support for empty tiers deletion
         assert ref_tg.task == target_tg.task
         merged_tg = TextGrid(name=ref_tg.textgrid.name,
@@ -214,7 +214,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             merged_tier = self.textgrid.getFirst(merged_tier_name)
             target_tier = self.textgrid.getFirst(target_tier_name)
             # in case either tier is not present, we just skip this merge
-            if merged_tier or target_tier is None:
+            if merged_tier is None or target_tier is None:
                 continue
 
             times_merged_tier, tier_merge = self.merge_tiers(merged_tier, target_tier)

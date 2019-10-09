@@ -10,8 +10,10 @@ class CorporaListing(Schema):
 
 
 class TierSpecifications(Schema):
-    validate_tier = fields.Bool()
-    name = fields.Bool()
+    validate_tier = fields.Bool(required=True)
+    required = fields.Bool(required=True)
+    allow_empty = fields.Bool(default=True)
+    name = fields.Bool(required=True)
     content_type = fields.Str()
     # used if the content type is categorical
     categories = fields.List(fields.Str())
@@ -54,10 +56,10 @@ class CampaignShort(Schema):
     total_tasks = fields.Int(required=True)
     completed_tasks = fields.Int(required=True)
     total_files = fields.Int(required=True)
-    completed_files = fields.Int(required=True)
+    assigned_files = fields.Int(required=True)
     corpus_path = fields.Str(required=True)
-    tiers_number = fields.Int(required=True)
-    check_textgrid = fields.Bool(required=True)
+    tiers_number = fields.Int()
+    check_textgrids = fields.Bool(required=True)
 
 
 class CampaignFull(CampaignShort):

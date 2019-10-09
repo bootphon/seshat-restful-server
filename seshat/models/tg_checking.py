@@ -1,5 +1,5 @@
 """Schemas that define how a TextGrid should be checked"""
-from typing import Dict
+from typing import List, Dict
 
 from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
     EmbeddedDocument
@@ -36,7 +36,7 @@ class UnCheckedTier(TierScheme):
         pass
 
 
-class CategoricalField(TierScheme):
+class CategoricalTier(TierScheme):
     categories = ListField(StringField())
 
     def __init__(self, *args, **kwargs):
@@ -44,7 +44,7 @@ class CategoricalField(TierScheme):
         self.parser = CategoricalChecker(self.categories)
 
 
-class ParsedField(TierScheme):
+class ParsedTier(TierScheme):
     parser_name = StringField(required=True)
 
     def __init__(self, *args, **kwargs):
@@ -55,17 +55,36 @@ class ParsedField(TierScheme):
 class TextGridCheckingScheme(Document):
     name = StringField(required=True)
     # mapping: tier_name -> specs
-    tiers_specs = MapField(EmbeddedDocumentField(TierScheme))
-    # empty tiers can be dropped at merging
+    tiers_specs: Dict[str, TierScheme] = MapField(EmbeddedDocumentField(TierScheme))
+    # empty tiers can be dropped at merging, currently not implemented in the client
     drop_empty_tiers = BooleanField(default=False)
     # for now this isn't set. In the future it'll be a a pluginizable class that can handle checking outside
     # of the defined generic framework
     tg_checker_name = StringField()
 
     @classmethod
-    def from_tierspecs_schema(cls, scheme_data: Dict, scheme_name: str):
-        # TODO
-        raise NotImplemented()
+    def from_tierspecs_schema(cls, scheme_data: List, scheme_name: str):
+        new_scheme = cls(name=scheme_name)
+        for tier_specs in scheme_data:
+            if tier_specs["validate_tier"]:
+                new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
+                                                                           required=tier_specs["required"])
+            else:
+                if tier_specs["content_type"] == "CATEGORIES":
+                    new_tier_scheme = CategoricalTier(name=tier_specs["name"],
+                                                                                 required=tier_specs["required"],
+                                                                                 allow_empty=tier_specs["allow_empty"],
+                                                                                 categories=tier_specs["categories"])
+                elif tier_specs["content_type"] == "PARSED":
+                    new_tier_scheme = ParsedTier(name=tier_specs["name"],
+                                                                            required=tier_specs["required"],
+                                                                            allow_empty=tier_specs["allow_empty"],
+                                                                            parser_name=tier_specs["parser_name"])
+
+                else:
+                    raise ValueError("Invalid content type")
+            new_scheme.tiers_specs[tier_specs["name"]] = new_tier_scheme
+        return new_scheme
 
     @property
     def required_tiers_names(self):

@@ -41,7 +41,7 @@ class CampaignAdminHandler(AdminMethodView):
                 scheme_name=args["name"])
             checking_scheme.validate()
         except ValidationError as e:
-            abort(403, message="Invalid tier specifications : %s" % str(e))
+            return abort(403, message="Invalid tier specifications : %s" % str(e))
 
         try:
             if args.get("data_csv") is not None:

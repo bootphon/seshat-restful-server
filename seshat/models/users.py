@@ -16,8 +16,8 @@ class Notification(Document):
                                       "upload", "finished",
                                       "alert"])
     object_type = StringField(required=True,
-                              choices=["task", "user", "campaign"])
-    object_id = StringField(required=True)
+                              choices=["task", "user", "campaign", "dashboard"])
+    object_id = StringField()
 
     def to_msg(self):
         return self.to_json()
@@ -90,7 +90,7 @@ class Admin(User):
 
 
 class Annotator(User):
-    creation_time = DateTimeField(default=datetime.now)
+    creation_time: datetime = DateTimeField(default=datetime.now)
     assigned_tasks = ListField(ReferenceField('BaseTask'))
     locked = BooleanField(default=False)
 
@@ -115,11 +115,23 @@ class Annotator(User):
 
     @property
     def short_profile(self):
-        raise NotImplemented()
+        return {
+            "fullname": self.first_name + " " + self.last_name,
+            "username": self.username,
+            "last_activity": self.last_activity,
+            "active_tasks": len([task for task in self.assigned_tasks if not task.is_done]),
+            "finished_tasks": len([task for task in self.assigned_tasks if task.is_done])
+        }
 
     @property
     def full_profile(self):
-        raise NotImplemented()
+        out = self.short_profile
+        out.update({
+            "email" : self.email,
+            "creation_date": self.creation_time.date(),
+            "tasks": [task.short_status for task in self.assigned_tasks]
+        })
+        return out
 
     def compute_stats(self):
         pass

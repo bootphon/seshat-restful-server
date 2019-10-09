@@ -143,7 +143,7 @@ class TaskCommentHandler(LoggedInMethodView):
     def get(self, task_id: str):
         """Retrieves the list of comments for a task"""
         task: BaseTask = BaseTask.objects(task_id=task_id)
-        return [comment.msg_form for comment in task]
+        return [comment.to_msg for comment in task]
 
     @tasks_blp.arguments(TaskCommentSubmission, as_kwargs=True)
     @tasks_blp.response(code=200)
