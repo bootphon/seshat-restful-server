@@ -60,6 +60,7 @@ class CampaignShort(Schema):
     corpus_path = fields.Str(required=True)
     tiers_number = fields.Int()
     check_textgrids = fields.Bool(required=True)
+    annotators = fields.List(fields.Str())
 
 
 class CampaignFull(CampaignShort):

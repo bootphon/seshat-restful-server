@@ -119,6 +119,14 @@ class Campaign(Document):
     def active_tasks(self):
         return BaseTask.objects(campaign=self.id, is_done=False)
 
+    @property
+    def annotators(self):
+        all_annotators = set()
+        for task in self.tasks:
+            for annotator in task.annotators:
+                all_annotators.add(annotator)
+        return list(all_annotators)
+
     def compute_short_stats(self):
         # TODO update this
         tasks = {
@@ -187,7 +195,8 @@ class Campaign(Document):
             "assigned_files": len(set(task.data_file for task in self.tasks)),
             "corpus_path": self.corpus_path,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
-            "check_textgrids": self.check_textgrids
+            "check_textgrids": self.check_textgrids,
+            "annotators": self.annotators
         }
 
     @property

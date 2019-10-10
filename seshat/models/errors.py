@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import List, Dict
 
-from attr import dataclass
+from dataclasses import dataclass
 from textgrid import Interval
 
 
