@@ -10,3 +10,5 @@ numpy
 marshmallow_enum
 marshmallow
 pyjwt
+dataclasses
+blinker
