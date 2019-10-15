@@ -181,6 +181,7 @@ class Campaign(Document):
     def short_summary(self):
         return {
             "name": self.name,
+            "creator": self.creator.short_profile,
             "total_tasks": len(self.tasks),
             "completed_tasks": len([task for task in self.tasks if task.is_done]),
             "total_files": len(self.populate_audio_files()),

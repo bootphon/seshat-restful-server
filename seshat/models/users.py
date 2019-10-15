@@ -84,6 +84,11 @@ class User(Document):
                                         100000).hex()
         return pass_hash, salt
 
+    @property
+    def short_profile(self):
+        return {"fullname": self.full_name,
+                "username": self.username}
+
 
 class Admin(User):
     pass

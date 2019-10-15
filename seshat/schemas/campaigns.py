@@ -1,6 +1,7 @@
 from marshmallow import Schema, fields, validates, ValidationError, validates_schema
 from marshmallow import validate
 
+from seshat.schemas.users import UserShortProfile
 from .tasks import TaskShort
 
 
@@ -53,6 +54,7 @@ class CampaignEditSchema(Schema):
 
 class CampaignShort(Schema):
     name = fields.Str(required=True)
+    creator = fields.Nested(UserShortProfile, required=True)
     total_tasks = fields.Int(required=True)
     completed_tasks = fields.Int(required=True)
     total_files = fields.Int(required=True)
