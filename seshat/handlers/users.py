@@ -49,6 +49,7 @@ class ManageAnnotatorHandler(AdminMethodView):
             user: Annotator = Annotator.objects(args["username"])
             del args["username"]
             user.update(**args)
+            user.save()
         except NotUniqueError:
             abort(403, message="Email already in database")
         except ValidationError:
