@@ -89,7 +89,8 @@ class User(Document):
         return {"fullname": self.full_name,
                 "first_name": self.first_name,
                 "last_name": self.last_name,
-                "username": self.username}
+                "username": self.username,
+                "type": self.__class__.__name__.lower()}
 
 
 class Admin(User):
@@ -133,7 +134,7 @@ class Annotator(User):
     def full_profile(self):
         out = self.short_profile
         out.update({
-            "email" : self.email,
+            "email": self.email,
             "creation_date": self.creation_time.date(),
             "tasks": [task.short_status for task in self.assigned_tasks]
         })

@@ -1,6 +1,8 @@
 from flask.views import MethodView
 from flask_rest_api import Blueprint
 from mongoengine import Q
+
+from seshat.schemas.users import UserShortProfile
 from ..models import User
 from ..schemas.users import LoginCredentials, ConnectionToken, \
     NotificationData, NotificationDelete
@@ -27,6 +29,14 @@ class LoginHandler(MethodView):
             return {"token": user.get_token()}
         else:
             return  # returns a 401 error
+
+
+@accounts_blp.route("/data")
+class UserDataHandler(LoggedInMethodView):
+
+    @accounts_blp.response(UserShortProfile)
+    def get(self):
+        return self.user.short_profile
 
 
 @accounts_blp.route("/logout")

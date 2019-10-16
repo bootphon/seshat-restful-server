@@ -39,6 +39,7 @@ class UserShortProfile(Schema):
     first_name = fields.Str(required=True)
     last_name = fields.Str(required=True)
     username = fields.Str(required=True)
+    type = fields.Str(required=True)
 
 
 class AnnotatorShortProfile(UserShortProfile):
