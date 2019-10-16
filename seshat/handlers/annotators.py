@@ -8,18 +8,18 @@ from ..schemas.users import AnnotatorCreation, AnnotatorFullProfile, AnnotatorSh
     AnnotatorLockRequest
 from ..models import Annotator
 
-users_blp = Blueprint("users", __name__, url_prefix="/users",
-                      description="Users administration and creation")
+annotators_blp = Blueprint("annotators", __name__, url_prefix="/annotators",
+                           description="Annotators administration and creation")
 
 
-@users_blp.route("/manage")
+@annotators_blp.route("/manage")
 class ManageAnnotatorHandler(AdminMethodView):
 
-    @users_blp.arguments(AnnotatorCreation)
-    @users_blp.response(code=200)
+    @annotators_blp.arguments(AnnotatorCreation)
+    @annotators_blp.response(code=200)
     def post(self, args):
         """Adds a new user"""
-        if len(args["password"])  < 8 :
+        if len(args["password"]) < 8:
             abort(403, message="Password has to be longer")
 
         try:
@@ -31,8 +31,8 @@ class ManageAnnotatorHandler(AdminMethodView):
         except NotUniqueError:
             abort(403, message="Username or email already present in database")
 
-    @users_blp.arguments(AnnotatorDeletion, as_kwargs=True)
-    @users_blp.response(code=200)
+    @annotators_blp.arguments(AnnotatorDeletion, as_kwargs=True)
+    @annotators_blp.response(code=200)
     def delete(self, username: str):
         """Deletes an existing user"""
         try:
@@ -41,8 +41,8 @@ class ManageAnnotatorHandler(AdminMethodView):
         except DoesNotExist:
             abort(404, message="User not found in database")
 
-    @users_blp.arguments(AnnotatorCreation)
-    @users_blp.response(code=200)
+    @annotators_blp.arguments(AnnotatorCreation)
+    @annotators_blp.response(code=200)
     def put(self, args: Dict):
         """Updates an existing user"""
         try:
@@ -56,21 +56,21 @@ class ManageAnnotatorHandler(AdminMethodView):
             abort(403, message="Invalid data")
 
 
-@users_blp.route("/view/<username>")
+@annotators_blp.route("/view/<username>")
 class AnnotatorFullProfileHandler(AdminMethodView):
 
-    @users_blp.response(AnnotatorFullProfile)
+    @annotators_blp.response(AnnotatorFullProfile)
     def get(self, username: str):
         """Display a an annotator's full profile"""
         user: Annotator = Annotator.objects(username=username)
         return user.full_profile
 
 
-@users_blp.route("/lock")
+@annotators_blp.route("/lock")
 class LockAnnotatorHandler(AdminMethodView):
 
-    @users_blp.arguments(AnnotatorLockRequest, as_kwargs=True)
-    @users_blp.response(code=200)
+    @annotators_blp.arguments(AnnotatorLockRequest, as_kwargs=True)
+    @annotators_blp.response(code=200)
     def post(self, username: str, lock_status: bool):
         """Locks or unlocks an annotator's account"""
         user: Annotator = Annotator.objects(username=username)
@@ -78,10 +78,10 @@ class LockAnnotatorHandler(AdminMethodView):
         user.save()
 
 
-@users_blp.route("/list")
+@annotators_blp.route("/list")
 class ListAnnotatorsHandler(AdminMethodView):
 
-    @users_blp.response(AnnotatorShortProfile(many=True))
+    @annotators_blp.response(AnnotatorShortProfile(many=True))
     def get(self):
         """Lists all annotators registered in DB"""
         return [user.short_profile for user in Annotator.objects]

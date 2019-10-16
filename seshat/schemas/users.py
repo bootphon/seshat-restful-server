@@ -36,6 +36,8 @@ class AnnotatorDeletion(Schema):
 
 class UserShortProfile(Schema):
     fullname = fields.Str(required=True)
+    first_name = fields.Str(required=True)
+    last_name = fields.Str(required=True)
     username = fields.Str(required=True)
 
 
