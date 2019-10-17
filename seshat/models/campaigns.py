@@ -188,6 +188,7 @@ class Campaign(Document):
     @property
     def short_summary(self):
         return {
+            "slug": self.slug,
             "name": self.name,
             "creator": self.creator.short_profile,
             "total_tasks": len(self.tasks),

@@ -168,7 +168,8 @@ class BaseTask(Document):
 
     @property
     def short_status(self):
-        return {"filename": self.data_file,
+        return {"id": self.id,
+                "filename": self.data_file,
                 "deadline": self.deadline,
                 "task_type": self.TASK_TYPE,
                 "annotators": [user.id for user in self.annotators],

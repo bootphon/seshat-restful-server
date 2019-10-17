@@ -1,8 +1,6 @@
-from pathlib import Path
 from typing import Dict
 
-from flask_rest_api import Blueprint, abort
-from flask import current_app
+from flask_rest_api import Blueprint
 
 from seshat.schemas.tasks import TaskFullAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
@@ -36,7 +34,7 @@ class AssignTasksHandler(AdminMethodView):
         if args.get("single_annot_assign") is not None:
             annotator = Annotator.objects(username=args["single_annot_assign"]["annotator"])
             task_class = SingleAnnotatorTask
-            annotators = {"annotator" : annotator}
+            annotators = {"annotator": annotator}
         else:
             reference = Annotator.objects(username=args["double_annot_assign"]["reference"])
             target = Annotator.objects(username=args["double_annot_assign"]["target"])

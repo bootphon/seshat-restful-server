@@ -31,6 +31,7 @@ class TaskLockRequest(Schema):
 
 
 class TaskShort(Schema):
+    id = fields.Str(required=True)
     filename = fields.Str(required=True)
     deadline = fields.Date()
     task_type = fields.Str(required=True)

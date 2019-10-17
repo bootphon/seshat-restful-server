@@ -53,6 +53,7 @@ class CampaignEditSchema(Schema):
 
 
 class CampaignShort(Schema):
+    slug = fields.Str(required=True)
     name = fields.Str(required=True)
     creator = fields.Nested(UserShortProfile, required=True)
     total_tasks = fields.Int(required=True)
@@ -70,7 +71,8 @@ class CampaignFull(CampaignShort):
 
 
 class CampaignWikiPage(Schema):
-    content = fields.Str()
+    content = fields.Str(required=True)
+    last_edit = fields.DateTime()
 
 
 class CampaignSubscriptionUpdate(Schema):
