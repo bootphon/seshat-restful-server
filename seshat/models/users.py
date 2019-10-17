@@ -87,7 +87,10 @@ class User(Document):
     @property
     def short_profile(self):
         return {"fullname": self.full_name,
-                "username": self.username}
+                "first_name": self.first_name,
+                "last_name": self.last_name,
+                "username": self.username,
+                "type": self.__class__.__name__.lower()}
 
 
 class Admin(User):
@@ -121,8 +124,7 @@ class Annotator(User):
     @property
     def short_profile(self):
         return {
-            "fullname": self.first_name + " " + self.last_name,
-            "username": self.username,
+            **super().short_profile,
             "last_activity": self.last_activity,
             "active_tasks": len([task for task in self.assigned_tasks if not task.is_done]),
             "finished_tasks": len([task for task in self.assigned_tasks if task.is_done])
@@ -132,7 +134,7 @@ class Annotator(User):
     def full_profile(self):
         out = self.short_profile
         out.update({
-            "email" : self.email,
+            "email": self.email,
             "creation_date": self.creation_time.date(),
             "tasks": [task.short_status for task in self.assigned_tasks]
         })
