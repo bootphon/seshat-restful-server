@@ -132,13 +132,13 @@ class Annotator(User):
 
     @property
     def full_profile(self):
-        out = self.short_profile
-        out.update({
+        return {
+            **self.short_profile,
             "email": self.email,
             "creation_date": self.creation_time.date(),
+            "is_locked": self.locked,
             "tasks": [task.short_status for task in self.assigned_tasks]
-        })
-        return out
+        }
 
     def compute_stats(self):
         pass

@@ -52,6 +52,7 @@ class AnnotatorShortProfile(UserShortProfile):
 class AnnotatorFullProfile(AnnotatorShortProfile):
     email = fields.Str(required=True)
     creation_date = fields.Date(required=True)
+    is_locked = fields.Bool(required=True)
     from .tasks import TaskShort
     tasks = fields.List(fields.Nested(TaskShort))
 

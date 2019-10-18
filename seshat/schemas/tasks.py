@@ -36,7 +36,8 @@ class TaskShort(Schema):
     deadline = fields.Date()
     task_type = fields.Str(required=True)
     annotators = fields.List(fields.Str())
-    assigner = fields.Str(required=True)
+    from .users import UserShortProfile
+    assigner = fields.Nested(UserShortProfile, required=True)
     creation_time = fields.DateTime(required=True)
     status = fields.Str(required=True)
     is_locked = fields.Bool(required=True)

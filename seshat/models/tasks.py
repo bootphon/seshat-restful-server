@@ -173,7 +173,7 @@ class BaseTask(Document):
                 "deadline": self.deadline,
                 "task_type": self.TASK_TYPE,
                 "annotators": [user.id for user in self.annotators],
-                "assigner": self.assigner.id,
+                "assigner": self.assigner.short_profile,
                 "creation_time": self.creation_time,
                 "status": self.steps_names[self.current_step]}
 
