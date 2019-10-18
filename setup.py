@@ -31,4 +31,12 @@ setup(
     packages=find_packages(exclude=['docs', 'tests']),
     setup_requires=['pytest-runner', 'setuptools>=38.6.0'],  # >38.6.0 needed for markdown README.md
     tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'add-admin = seshat.cli_apps.change_password:main',
+            'change-password = seshat.cli_apps.add_admin:main',
+            'check-parser = seshat.cli_apps.check_parser:main',
+            'check-dataset = seshat.cli_apps.check_dataset:main',
+        ]
+    }
 )

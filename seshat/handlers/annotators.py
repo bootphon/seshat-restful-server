@@ -24,8 +24,8 @@ class ManageAnnotatorHandler(AdminMethodView):
 
         try:
             new_user = Annotator(**args)
-            password, salt = Annotator.create_password_hash(args["password"])
-            new_user.password = password
+            pass_hash, salt = Annotator.create_password_hash(args["password"])
+            new_user.salted_password_hash = pass_hash
             new_user.salt = salt
             new_user.save()
         except NotUniqueError:
