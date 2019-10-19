@@ -1,5 +1,5 @@
 from flask.views import MethodView
-from flask_rest_api import Blueprint
+from flask_smorest import Blueprint
 from mongoengine import Q
 
 from seshat.schemas.users import UserShortProfile

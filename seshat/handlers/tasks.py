@@ -1,6 +1,6 @@
 from typing import Dict
 
-from flask_rest_api import Blueprint
+from flask_smorest import Blueprint
 
 from seshat.schemas.tasks import TaskFullAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView

@@ -1,4 +1,4 @@
-flask-rest-api
+flask-smorest
 textgrid
 mongoengine
 python-slugify

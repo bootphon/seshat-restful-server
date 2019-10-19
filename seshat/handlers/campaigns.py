@@ -3,7 +3,7 @@ from typing import Dict
 
 import slugify
 from flask import current_app
-from flask_rest_api import Blueprint, abort
+from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme

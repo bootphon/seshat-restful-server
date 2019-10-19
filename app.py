@@ -2,7 +2,7 @@ import os
 
 from mongoengine import connect
 from flask import Flask
-from flask_rest_api import Api
+from flask_smorest import Api
 
 from seshat.configs import DebugConfig, ProductionConfig
 from seshat.handlers import *

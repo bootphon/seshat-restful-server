@@ -1,6 +1,6 @@
 from typing import Dict
 
-from flask_rest_api import Blueprint, abort
+from flask_smorest import Blueprint, abort
 from mongoengine import NotUniqueError, DoesNotExist, ValidationError
 
 from ..handlers.commons import AdminMethodView

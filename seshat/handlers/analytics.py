@@ -1,4 +1,4 @@
-from flask_rest_api import Blueprint
+from flask_smorest import Blueprint
 
 from .commons import AdminMethodView
 
