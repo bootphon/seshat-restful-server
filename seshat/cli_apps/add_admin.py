@@ -12,16 +12,15 @@ argparser.add_argument("--first_name", default="John",
                        type=str, help="First name of new user")
 argparser.add_argument("--last_name", default="Cleese",
                        type=str, help="Last name of new user")
-argparser.add_argument("--db", default="seshat_prod", type=str,
+argparser.add_argument("--db", default="seshat_api_prod", type=str,
                        help="db name or address")
 
 
 def main():
     args = argparser.parse_args()
     connect(args.db)
-    pass_hash, salt = Annotator.create_password_hash(args["password"])
-    new_user = Admin(active=True,
-                     username=args.username,
+    pass_hash, salt = Annotator.create_password_hash(args.password)
+    new_user = Admin(username=args.username,
                      first_name=args.first_name,
                      last_name=args.last_name,
                      email=args.email,

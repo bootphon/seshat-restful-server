@@ -36,7 +36,7 @@ class ManageAnnotatorHandler(AdminMethodView):
     def delete(self, username: str):
         """Deletes an existing user"""
         try:
-            user: Annotator = Annotator.objects(username=username)
+            user: Annotator = Annotator.objects.get(username=username)
             user.delete()
         except DoesNotExist:
             abort(404, message="User not found in database")
@@ -46,7 +46,7 @@ class ManageAnnotatorHandler(AdminMethodView):
     def put(self, args: Dict):
         """Updates an existing user"""
         try:
-            user: Annotator = Annotator.objects(args["username"])
+            user: Annotator = Annotator.objects.get(args["username"])
             del args["username"]
             user.update(**args)
             user.save()
@@ -62,7 +62,7 @@ class AnnotatorFullProfileHandler(AdminMethodView):
     @annotators_blp.response(AnnotatorFullProfile)
     def get(self, username: str):
         """Display a an annotator's full profile"""
-        user: Annotator = Annotator.objects(username=username)
+        user: Annotator = Annotator.objects.get(username=username)
         return user.full_profile
 
 
@@ -73,7 +73,7 @@ class LockAnnotatorHandler(AdminMethodView):
     @annotators_blp.response(code=200)
     def post(self, username: str, lock_status: bool):
         """Locks or unlocks an annotator's account"""
-        user: Annotator = Annotator.objects(username=username)
+        user: Annotator = Annotator.objects.get(username=username)
         user.locked = lock_status
         user.save()
 

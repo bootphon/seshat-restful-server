@@ -2,12 +2,14 @@ import os
 
 from mongoengine import connect
 from flask import Flask
+from flask_cors import CORS
 from flask_smorest import Api
 
 from seshat.configs import DebugConfig, ProductionConfig
 from seshat.handlers import *
 
 app = Flask('Seshat API')
+CORS(app)
 app.config.from_object(DebugConfig)
 api = Api(app)
 

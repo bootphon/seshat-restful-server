@@ -1,5 +1,6 @@
 from flask.views import MethodView
-from flask_smorest import Blueprint
+from flask_smorest import Blueprint, abort
+from marshmallow import Schema, fields
 from mongoengine import Q
 
 from seshat.schemas.users import UserShortProfile
@@ -14,21 +15,26 @@ accounts_blp = Blueprint("accounts", __name__, url_prefix="/accounts",
                          description="Login/logout operations")
 
 
+class HttpErrorCode(Schema):
+    code = fields.Int(required=True)
+    message = fields.Str(required=True)
+
+
 @accounts_blp.route("/login")
 class LoginHandler(MethodView):
 
     @accounts_blp.arguments(LoginCredentials)
-    @accounts_blp.response(ConnectionToken, code=401)
+    @accounts_blp.response(ConnectionToken, code=200)
     def post(self, args):
         """Log in to the account. Returns the connection token"""
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
         if user is None:
-            return  # returns a 401 error
+            return abort(401, "Invalid login or password")
 
         if user.check_password(args["password"]):
             return {"token": user.get_token()}
         else:
-            return  # returns a 401 error
+            return abort(401, "Invalid login or password")
 
 
 @accounts_blp.route("/data")

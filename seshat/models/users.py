@@ -62,10 +62,10 @@ class User(Document):
         token_salt = os.urandom(16).hex()
         token_payload = {"salt": token_salt,
                          "username": self.username}
-        token = jwt.encode(token_payload,
+        token: bytes = jwt.encode(token_payload,
                            current_app.config["SECRET_KEY"],
                            algorithm="HS256")
-        self.active_token = token
+        self.active_token = token.decode()
         self.save()
         return token
 

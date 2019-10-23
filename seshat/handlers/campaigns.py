@@ -69,14 +69,14 @@ class CampaignAdminHandler(AdminMethodView):
     @campaigns_blp.response(code=200)
     def delete(self, slug: str):
         """Delete a campaign"""
-        campaign: Campaign = Campaign.objects(slug=slug)
+        campaign: Campaign = Campaign.objects.get(slug=slug)
         campaign.delete()
 
     @campaigns_blp.arguments(CampaignEditSchema, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def put(self, slug, **kwargs):
         """Update a campaign"""
-        campaign: Campaign = Campaign.objects(slug=slug)
+        campaign: Campaign = Campaign.objects.get(slug=slug)
         campaign.update(**kwargs)
         campaign.save()
 
@@ -96,7 +96,7 @@ class ViewCampaignHandler(AdminMethodView):
     @campaigns_blp.response(CampaignFull)
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
-        campaign: Campaign = Campaign.objects(slug=campaign_slug)
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return campaign.full_summary
 
 
@@ -107,7 +107,7 @@ class WikiUpdateHandler(AdminMethodView):
     @campaigns_blp.response(code=200)
     def post(self, content: str, campaign_slug: str):
         """Update the campaign's wiki page"""
-        campaign: Campaign = Campaign.objects(slug=campaign_slug)
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         campaign.wiki_page = content
         campaign.save()
 
@@ -118,7 +118,7 @@ class WikiViewHandler(LoggedInMethodView):
     @campaigns_blp.response(CampaignWikiPage)
     def get(self, campaign_slug: str):
         """View a campaign's wiki page"""
-        campaign: Campaign = Campaign.objects(slug=campaign_slug)
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
 
@@ -128,7 +128,7 @@ class WikiViewHandler(LoggedInMethodView):
     @campaigns_blp.response(CampaignWikiPage)
     def get(self, campaign_slug: str):
         """Retrieve the campaign's wikipage content"""
-        campaign: Campaign = Campaign.objects(slug=campaign_slug)
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
 
@@ -139,7 +139,7 @@ class CampaignSubscriptionHandler(AdminMethodView):
     @campaigns_blp.response(code=200)
     def post(self, slug: str, subscription_status: bool):
         """Subscribes or unsubscribes an admin from a campaign"""
-        campaign: Campaign = Campaign.objects(slug=slug)
+        campaign: Campaign = Campaign.objects.get(slug=slug)
         if subscription_status:
             if self.user not in campaign.subscribers:
                 campaign.subscribers.append(self.user)

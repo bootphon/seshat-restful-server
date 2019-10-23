@@ -20,7 +20,7 @@ class LoggedInMethodView(MethodView):
         token = request.headers["Auth-token"]
         token_data = jwt.decode(token, current_app.config["SECRET_KEY"],
                                 algorithm="HS256")
-        self.user = User.objects(username=token_data["username"])
+        self.user = User.objects.get(username=token_data["username"])
         self.user.check_token(token)
         self.check_user_type()
         try:

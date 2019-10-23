@@ -33,8 +33,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'add-admin = seshat.cli_apps.change_password:main',
-            'change-password = seshat.cli_apps.add_admin:main',
+            'add-admin = seshat.cli_apps.add_admin:main',
+            'change-password = seshat.cli_apps.check_password:main',
             'check-parser = seshat.cli_apps.check_parser:main',
             'check-dataset = seshat.cli_apps.check_dataset:main',
         ]
