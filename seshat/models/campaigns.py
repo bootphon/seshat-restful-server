@@ -11,7 +11,7 @@ import ffmpeg
 from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
-                         ValidationError, NULLIFY, signals, PULL)
+                         ValidationError, NULLIFY, signals, PULL, IntField)
 from textgrid import TextGrid
 
 from .tasks import BaseTask
@@ -22,7 +22,17 @@ from .tg_checking import TextGridCheckingScheme
 
 class CampaignStats(EmbeddedDocument):
     """Stores the campaing basic statistics"""
-    pass
+    # TODO add "refresh campaign stats handler"
+    total_files = IntField(required=True)
+    assigned_files = IntField(required=True)
+    total_tasks = IntField(required=True)
+    completed_tasks = IntField(required=True)
+
+    def to_msg(self):
+        return {"total_files": self.total_files,
+                "assigned_files": self.assigned_files,
+                "total_tasks": self.total_tasks,
+                "completed_tasks": self.completed_tasks}
 
 
 class Campaign(Document):

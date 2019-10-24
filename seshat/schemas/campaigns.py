@@ -52,14 +52,18 @@ class CampaignEditSchema(Schema):
     name = fields.Str(required=True)
 
 
-class CampaignShort(Schema):
-    slug = fields.Str(required=True)
-    name = fields.Str(required=True)
-    creator = fields.Nested(UserShortProfile, required=True)
+class CampaignStats(Schema):
     total_tasks = fields.Int(required=True)
     completed_tasks = fields.Int(required=True)
     total_files = fields.Int(required=True)
     assigned_files = fields.Int(required=True)
+
+
+class CampaignShort(Schema):
+    slug = fields.Str(required=True)
+    name = fields.Str(required=True)
+    creator = fields.Nested(UserShortProfile, required=True)
+    stats = fields.Nested(CampaignStats)
     corpus_path = fields.Str(required=True)
     tiers_number = fields.Int()
     check_textgrids = fields.Bool(required=True)
