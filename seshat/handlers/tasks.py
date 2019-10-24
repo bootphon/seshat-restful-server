@@ -109,7 +109,7 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
     @tasks_blp.arguments(TaskTextgridSubmission)
     @tasks_blp.response(TextGridErrors, code=403)
     def post(self, args, task_id: str):
-        """Textgridsubmission handler"""
+        """Textgrid submission handler"""
         task: BaseTask = BaseTask.objects.get(task_id=task_id)
         if task.is_locked:
             return

@@ -20,7 +20,8 @@ class BaseTextGridDocument(Document):
     checking_scheme: TextGridCheckingScheme = ReferenceField(TextGridCheckingScheme)
     creators = ListField(ReferenceField('Annotator'))
     creation_time = DateTimeField(default=datetime.now, required=True)
-    meta = {'allow_inheritance': True}
+    meta = {'allow_inheritance': True,
+            'abstract': True}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

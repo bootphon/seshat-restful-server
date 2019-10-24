@@ -7,7 +7,7 @@ from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
-from seshat.schemas.campaigns import CampaignFull, CampaignDeleteSchema, CampaignEditSchema, CampaignSubscriptionUpdate
+from seshat.schemas.campaigns import CampaignFull, CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..schemas.campaigns import CampaignCreation, CampaignShort, CampaignWikiPage, CorporaListing
@@ -32,7 +32,7 @@ class AvailableCorporaHandler(AdminMethodView):
 class CampaignAdminHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignCreation)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(CampaignSlug, code=200)
     def post(self, args: Dict):
         """Creates a new campaign"""
         try:
@@ -65,7 +65,7 @@ class CampaignAdminHandler(AdminMethodView):
         except ValidationError as e:
             abort(403, "Invalid campaign specifications : %s" % str(e))
 
-    @campaigns_blp.arguments(CampaignDeleteSchema, as_kwargs=True)
+    @campaigns_blp.arguments(CampaignSlug, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def delete(self, slug: str):
         """Delete a campaign"""

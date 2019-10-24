@@ -42,7 +42,7 @@ class CampaignCreation(Schema):
             raise ValidationError("Data has to be either CSV or a folder but not both")
 
 
-class CampaignDeleteSchema(Schema):
+class CampaignSlug(Schema):
     slug = fields.Str(required=True)
 
 
