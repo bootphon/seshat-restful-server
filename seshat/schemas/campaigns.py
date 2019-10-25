@@ -14,15 +14,16 @@ class TierSpecifications(Schema):
     validate_tier = fields.Bool(required=True)
     required = fields.Bool(required=True)
     allow_empty = fields.Bool(default=True)
-    name = fields.Bool(required=True)
+    name = fields.Str(required=True)
     content_type = fields.Str()
     # used if the content type is categorical
     categories = fields.List(fields.Str())
+    # used if the content type is parsed
     parser_name = fields.Str()
 
     @validates("content_type")
     def validate_content_type(self, value: str):
-        if value not in ("CATEGORIES", "PARSED"):
+        if value not in ("CATEGORIES", "PARSED", "NONE"):
             raise ValidationError("Invalid content type category.")
 
 

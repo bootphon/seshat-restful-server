@@ -2,6 +2,7 @@ import jwt
 from flask import request, current_app
 from flask.views import MethodView
 from flask_smorest import abort
+from jwt import DecodeError
 from mongoengine import DoesNotExist
 
 from ..models.users import User, Admin, Annotator
@@ -18,8 +19,12 @@ class LoggedInMethodView(MethodView):
 
     def dispatch_request(self, *args, **kwargs):
         token = request.headers["Auth-token"]
-        token_data = jwt.decode(token, current_app.config["SECRET_KEY"],
-                                algorithm="HS256")
+        try:
+            token_data = jwt.decode(token, current_app.config["SECRET_KEY"],
+                                    algorithm="HS256")
+        except DecodeError:
+            return abort(500, message="Invalid token")
+
         self.user = User.objects.get(username=token_data["username"])
         self.user.check_token(token)
         self.check_user_type()
