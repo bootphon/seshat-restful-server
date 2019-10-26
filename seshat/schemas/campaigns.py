@@ -37,10 +37,10 @@ class CampaignCreation(Schema):
     check_textgrids = fields.Bool(default=True)
     checking_scheme = fields.List(fields.Nested(TierSpecifications))
 
-    @validates_schema
-    def validate_data_fields(self, data):
-        if data.get("data_csv") is not None and data.get("data_folder") is not None:
-            raise ValidationError("Data has to be either CSV or a folder but not both")
+    # @validates_schema
+    # def validate_data_fields(self, data):
+    #     if data.get("data_csv") is not None and data.get("data_folder") is not None:
+    #         raise ValidationError("Data has to be either CSV or a folder but not both")
 
 
 class CampaignSlug(Schema):

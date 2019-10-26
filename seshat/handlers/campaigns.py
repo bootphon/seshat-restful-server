@@ -53,13 +53,14 @@ class CampaignAdminHandler(AdminMethodView):
                                     slug=campaign_slug,
                                     description=args["description"],
                                     corpus_path=corpus_path,
-                                    check_textgrid=args["check_textgrids"],
+                                    check_textgrids=args["check_textgrids"],
                                     serve_audio=args["enable_audio_dl"],
                                     creator=self.user,
                                     subscribers=[self.user])
             new_campaign.save()
             new_campaign.checking_scheme = checking_scheme
             new_campaign.cascade_save()
+            return {"slug": new_campaign.slug}
         except NotUniqueError:
             abort(403, message="The campaign name is too close to another campaign name")
         except ValidationError as e:

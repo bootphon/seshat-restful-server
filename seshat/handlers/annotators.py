@@ -23,8 +23,9 @@ class ManageAnnotatorHandler(AdminMethodView):
             abort(403, message="Password has to be longer")
 
         try:
+            password = args.pop("password")
             new_user = Annotator(**args)
-            pass_hash, salt = Annotator.create_password_hash(args["password"])
+            pass_hash, salt = Annotator.create_password_hash(password)
             new_user.salted_password_hash = pass_hash
             new_user.salt = salt
             new_user.save()

@@ -201,10 +201,13 @@ class Campaign(Document):
             "slug": self.slug,
             "name": self.name,
             "creator": self.creator.short_profile,
-            "total_tasks": len(self.tasks),
-            "completed_tasks": len([task for task in self.tasks if task.is_done]),
-            "total_files": len(self.populate_audio_files()),
-            "assigned_files": len(set(task.data_file for task in self.tasks)),
+            # TODO use the stats object when it's completed and rightly updated
+            "stats" : {
+                "total_tasks": len(self.tasks),
+                "completed_tasks": len([task for task in self.tasks if task.is_done]),
+                "total_files": len(self.populate_audio_files()),
+                "assigned_files": len(set(task.data_file for task in self.tasks)),
+            },
             "corpus_path": self.corpus_path,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
