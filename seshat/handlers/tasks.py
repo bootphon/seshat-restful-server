@@ -6,7 +6,7 @@ from seshat.schemas.tasks import TaskFullAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from ..models import SingleAnnotatorTask, DoubleAnnotatorTask, Annotator, Campaign, BaseTask
 from ..models.errors import error_log
-from ..schemas.tasks import TaskShort, TaskAssignment, TaskFullAdmin, \
+from ..schemas.tasks import TaskShort, TasksAssignment, TaskFullAdmin, \
     TaskComment, TaskCommentSubmission, \
     TaskTextgridSubmission, TextGridErrors, TaskLockRequest
 
@@ -26,7 +26,7 @@ class ListAssignedTasksHandler(AnnotatorMethodView):
 @tasks_blp.route("assign")
 class AssignTasksHandler(AdminMethodView):
 
-    @tasks_blp.arguments(TaskAssignment(many=True))
+    @tasks_blp.arguments(TasksAssignment(many=True))
     @tasks_blp.response(code=200)
     def post(self, args: Dict):
         """Assign annotating tasks (linked to an audio file) to annotators"""

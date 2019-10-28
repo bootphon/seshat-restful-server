@@ -211,7 +211,8 @@ class Campaign(Document):
             "corpus_path": self.corpus_path,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
-            "annotators": self.annotators
+            "annotators": self.annotators,
+            "subscribers": [user.username for user in self.subscribers]
         }
 
     @property

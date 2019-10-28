@@ -10,7 +10,7 @@ class DoubleAnnotatorAssignment(Schema):
     target = fields.Str(required=True)
 
 
-class TaskAssignment(Schema):
+class TasksAssignment(Schema):
     audio_files = fields.List(fields.Str())
     deadline = fields.Date()
     campaign = fields.Str(required=True)

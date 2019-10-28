@@ -5,12 +5,21 @@ from seshat.schemas.users import UserShortProfile
 from .tasks import TaskShort
 
 
+class CorpusFile(Schema):
+    """File information: used for task assignment"""
+    filename = fields.Str(required=True)
+    task_count = fields.Int(required=True)
+    type = fields.Str(required=True)
+
+
 class CorporaListing(Schema):
+    """All available corpora listing: used for campaign creation"""
     folders_corpora = fields.List(fields.Str())
     csv_corpora = fields.List(fields.Str())
 
 
 class TierSpecifications(Schema):
+    """Tier checking's specifications"""
     validate_tier = fields.Bool(required=True)
     required = fields.Bool(required=True)
     allow_empty = fields.Bool(default=True)
@@ -69,6 +78,7 @@ class CampaignShort(Schema):
     tiers_number = fields.Int()
     check_textgrids = fields.Bool(required=True)
     annotators = fields.List(fields.Str())
+    subscribers = fields.List(fields.Str)
 
 
 class CampaignFull(CampaignShort):

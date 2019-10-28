@@ -7,7 +7,8 @@ from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
-from seshat.schemas.campaigns import CampaignFull, CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate
+from seshat.schemas.campaigns import CampaignFull, CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
+    CorpusFile
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..schemas.campaigns import CampaignCreation, CampaignShort, CampaignWikiPage, CorporaListing
@@ -101,6 +102,16 @@ class ViewCampaignHandler(AdminMethodView):
         return campaign.full_summary
 
 
+@campaigns_blp.route("/files/list/<campaign_slug>")
+class GetCampaignCorpusFiles(AdminMethodView):
+
+    @campaigns_blp.response(CorpusFile(many=True))
+    def get(self, campaign_slug: str):
+        """Returns the full campaign data"""
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        return campaign.full_summary
+
+
 @campaigns_blp.route("wiki/update/<campaign_slug>")
 class WikiUpdateHandler(AdminMethodView):
 
@@ -122,15 +133,6 @@ class WikiViewHandler(LoggedInMethodView):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return {"content": campaign.wiki_page}
 
-
-@campaigns_blp.route("wiki/view/<campaign_slug>")
-class WikiViewHandler(LoggedInMethodView):
-
-    @campaigns_blp.response(CampaignWikiPage)
-    def get(self, campaign_slug: str):
-        """Retrieve the campaign's wikipage content"""
-        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return {"content": campaign.wiki_page}
 
 
 @campaigns_blp.route("/subscribe")
