@@ -3,7 +3,7 @@ from flask_smorest import Blueprint, abort
 from marshmallow import Schema, fields
 from mongoengine import Q
 
-from seshat.schemas.users import UserShortProfile
+from seshat.schemas.users import UserShortProfile, NotificationsCount
 from ..models import User
 from ..schemas.users import LoginCredentials, ConnectionToken, \
     NotificationData, NotificationDelete
@@ -67,4 +67,14 @@ class NotificationsHandler(LoggedInMethodView):
     def delete(self, args):
         """Delete a user's notification"""
         notif: Notification = Notification.objects.get(id=args["notif_id"])
+        if not notif in self.user.pending_notifications:
+            return abort(501, message="Unable to delete notification because it's not yours!")
         notif.delete()
+
+
+@accounts_blp.route("/notifications/count")
+class NotificationsCountHandler(LoggedInMethodView):
+
+    @accounts_blp.response(NotificationsCount)
+    def get(self):
+        return {'count': len(self.user.pending_notifications)}

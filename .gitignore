@@ -4,3 +4,7 @@ error.log
 credentials.json
 logs/
 db_backup
+build/
+*.egg-info/
+.eggs/
+dist/

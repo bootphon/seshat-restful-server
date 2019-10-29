@@ -18,7 +18,7 @@ class TasksAssignment(Schema):
     double_annot_assign = fields.Nested(DoubleAnnotatorAssignment())
 
     @validates_schema
-    def validate_data_fields(self, data):
+    def validate_data_fields(self, data, **kwargs):
         single_bool = data.get("single_annot_assign") is None
         double_bool = data.get("double_annot_assign") is None
         if single_bool == double_bool:

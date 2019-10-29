@@ -7,13 +7,14 @@ from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
-from seshat.schemas.campaigns import CampaignFull, CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
+from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
     CorpusFile
+from seshat.schemas.tasks import TaskShort
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
-from ..schemas.campaigns import CampaignCreation, CampaignShort, CampaignWikiPage, CorporaListing
-from ..utils import list_subdirs, list_corpus_csv
 from ..models.campaigns import Campaign
+from ..schemas.campaigns import CampaignCreation, CampaignStatus, CampaignWikiPage, CorporaListing
+from ..utils import list_subdirs, list_corpus_csv
 
 campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
                           description="Operations to display and create campaigns")
@@ -86,30 +87,40 @@ class CampaignAdminHandler(AdminMethodView):
 @campaigns_blp.route("list/")
 class ListCampaignsHandler(AdminMethodView):
 
-    @campaigns_blp.response(CampaignShort(many=True))
+    @campaigns_blp.response(CampaignStatus(many=True))
     def get(self):
         """List all created campaigns, in summary form"""
-        return [campaign.short_summary for campaign in Campaign.objects]
+        return [campaign.status for campaign in Campaign.objects]
 
 
 @campaigns_blp.route("view/<campaign_slug>")
 class ViewCampaignHandler(AdminMethodView):
 
-    @campaigns_blp.response(CampaignFull)
+    @campaigns_blp.response(CampaignStatus)
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return campaign.full_summary
+        return campaign.status
 
 
-@campaigns_blp.route("/files/list/<campaign_slug>")
+@campaigns_blp.route("list/tasks/<campaign_slug>")
+class ViewCampaignHandler(AdminMethodView):
+
+    @campaigns_blp.response(TaskShort(many=True))
+    def get(self, campaign_slug: str):
+        """Returns the full campaign data"""
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        return [task.short_status for task in campaign.tasks]
+
+
+@campaigns_blp.route("files/list/<campaign_slug>")
 class GetCampaignCorpusFiles(AdminMethodView):
 
     @campaigns_blp.response(CorpusFile(many=True))
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return campaign.full_summary
+        return campaign.populate_audio_files()
 
 
 @campaigns_blp.route("wiki/update/<campaign_slug>")

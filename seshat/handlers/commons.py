@@ -52,3 +52,5 @@ class AnnotatorMethodView(LoggedInMethodView):
 
     def check_user_type(self):
         assert isinstance(self.user, Annotator)
+        if self.user.locked:
+            abort(401, message="You can't login to Seshat because your account has been locked")

@@ -196,7 +196,7 @@ class Campaign(Document):
         return buffer.getvalue()
 
     @property
-    def short_summary(self):
+    def status(self):
         return {
             "slug": self.slug,
             "name": self.name,
@@ -214,12 +214,6 @@ class Campaign(Document):
             "annotators": self.annotators,
             "subscribers": [user.username for user in self.subscribers]
         }
-
-    @property
-    def full_summary(self):
-        out = self.short_summary
-        out["tasks"] = [task.short_status for task in self.tasks]
-        return out
 
 Campaign.register_delete_rule(BaseTextGridDocument, "campaign", NULLIFY)
 signals.post_delete.connect(Campaign.post_delete_cleanup, sender=Campaign)

@@ -90,6 +90,7 @@ class User(Document):
                 "first_name": self.first_name,
                 "last_name": self.last_name,
                 "username": self.username,
+                "email": self.email,
                 "type": self.__class__.__name__.lower()}
 
 
@@ -122,22 +123,14 @@ class Annotator(User):
         return [task for task in self.assigned_tasks if not task.is_done]
 
     @property
-    def short_profile(self):
+    def profile(self):
         return {
             **super().short_profile,
             "last_activity": self.last_activity,
             "active_tasks": len([task for task in self.assigned_tasks if not task.is_done]),
-            "finished_tasks": len([task for task in self.assigned_tasks if task.is_done])
-        }
-
-    @property
-    def full_profile(self):
-        return {
-            **self.short_profile,
-            "email": self.email,
+            "finished_tasks": len([task for task in self.assigned_tasks if task.is_done]),
             "creation_date": self.creation_time.date(),
             "is_locked": self.locked,
-            "tasks": [task.short_status for task in self.assigned_tasks]
         }
 
     def compute_stats(self):

@@ -145,7 +145,7 @@ class TaskCommentHandler(LoggedInMethodView):
 
     @tasks_blp.arguments(TaskCommentSubmission, as_kwargs=True)
     @tasks_blp.response(code=200)
-    def post(self, content, task_id: str):
+    def post(self, content: str, task_id: str):
         """Adds a comment to a task"""
         task: BaseTask = BaseTask.objects.get(task_id=task_id)
         if task.is_locked:

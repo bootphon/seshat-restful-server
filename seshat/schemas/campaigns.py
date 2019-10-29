@@ -2,7 +2,6 @@ from marshmallow import Schema, fields, validates, ValidationError, validates_sc
 from marshmallow import validate
 
 from seshat.schemas.users import UserShortProfile
-from .tasks import TaskShort
 
 
 class CorpusFile(Schema):
@@ -46,10 +45,10 @@ class CampaignCreation(Schema):
     check_textgrids = fields.Bool(default=True)
     checking_scheme = fields.List(fields.Nested(TierSpecifications))
 
-    # @validates_schema
-    # def validate_data_fields(self, data):
-    #     if data.get("data_csv") is not None and data.get("data_folder") is not None:
-    #         raise ValidationError("Data has to be either CSV or a folder but not both")
+    @validates_schema
+    def validate_data_fields(self, data, **kwargs):
+         if data.get("data_csv") is not None and data.get("data_folder") is not None:
+             raise ValidationError("Data has to be either CSV or a folder but not both")
 
 
 class CampaignSlug(Schema):
@@ -69,7 +68,7 @@ class CampaignStats(Schema):
     assigned_files = fields.Int(required=True)
 
 
-class CampaignShort(Schema):
+class CampaignStatus(Schema):
     slug = fields.Str(required=True)
     name = fields.Str(required=True)
     creator = fields.Nested(UserShortProfile, required=True)
@@ -79,10 +78,6 @@ class CampaignShort(Schema):
     check_textgrids = fields.Bool(required=True)
     annotators = fields.List(fields.Str())
     subscribers = fields.List(fields.Str)
-
-
-class CampaignFull(CampaignShort):
-    tasks = fields.List(fields.Nested(TaskShort))
 
 
 class CampaignWikiPage(Schema):
