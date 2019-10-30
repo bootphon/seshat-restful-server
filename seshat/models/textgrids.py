@@ -18,7 +18,7 @@ class BaseTextGridDocument(Document):
     textgrid_file = FileField(required=True)
     task = ReferenceField('BaseTask')
     checking_scheme: TextGridCheckingScheme = ReferenceField(TextGridCheckingScheme)
-    creators = ListField(ReferenceField('Annotator'))
+    creators: List['Annotator'] = ListField(ReferenceField('Annotator'))
     creation_time = DateTimeField(default=datetime.now, required=True)
     meta = {'allow_inheritance': True,
             'abstract': True}
@@ -59,6 +59,14 @@ class BaseTextGridDocument(Document):
 
     def check(self):
         raise NotImplemented()
+
+    @property
+    def task_tg_msg(self):
+        return {
+            "id": self.id,
+            "creators": [annotator.short_profile for annotator in self.creators],
+            "created": self.creation_time
+        }
 
 
 class LoggedTextGrid(BaseTextGridDocument):

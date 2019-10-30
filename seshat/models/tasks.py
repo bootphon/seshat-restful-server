@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import ffmpeg
 from flask import current_app
@@ -11,7 +11,7 @@ from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
                          StringField, Document, BooleanField,
                          EmbeddedDocumentListField, DateField,
                          FloatField, IntField, EmbeddedDocumentField,
-                         PULL, NULLIFY)
+                         PULL, NULLIFY, ValidationError)
 from textgrid import TextGrid, IntervalTier
 
 from seshat.models.errors import MergeConflictsError
@@ -107,7 +107,7 @@ class BaseTask(Document):
             .replace("/", "_")
 
     @property
-    def textgrids(self) -> Dict[str, BaseTextGridDocument]:
+    def textgrids(self) -> Dict[str, Optional[BaseTextGridDocument]]:
         raise NotImplemented()
 
     @property
@@ -163,7 +163,7 @@ class BaseTask(Document):
         self.save()
 
     @property
-    def files(self) -> Dict:
+    def files(self) -> Dict[str, BaseTextGridDocument]:
         raise NotImplemented()
 
     @property
@@ -175,23 +175,26 @@ class BaseTask(Document):
                 "annotators": [user.id for user in self.annotators],
                 "assigner": self.assigner.short_profile,
                 "creation_time": self.creation_time,
-                "status": self.steps_names[self.current_step]}
+                "status": self.steps_names[self.current_step],
+                "is_locked": self.is_locked}
 
     @property
     def admin_status(self):
+        textgrids = []
+        for tg_name, tg in self.textgrids.items():
+            tg_dict = {"name": tg_name,
+                       "is_done": bool(tg)}
+            if tg is not None:
+                tg_dict.update(tg.task_tg_msg)
+
         return {**self.short_status,
-                "textgrids": [{"name": name, "is_done": bool(tg)}
-                              for name, tg in self.files
-                              if isinstance(tg, BaseTextGridDocument)],
-                "comments": [comment.to_msg() for comment in self.discussion]
-        }
+                "textgrids": textgrids}
 
     @property
     def annotator_status(self):
         # TODO
         return {**self.short_status,
-                "all_statuses": list(self.steps_names.values())
-                }
+                "all_statuses": list(self.steps_names.values())}
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -204,7 +207,7 @@ class BaseTask(Document):
 
     def add_comment(self, comment_text: str, author: 'User'):
         if not comment_text.strip():
-            return
+            ValidationError("Can't submit empty comment.")
 
         new_comment = TaskComment(author=author.id, text=comment_text)
         self.discussion.append(new_comment)
@@ -459,7 +462,7 @@ class DoubleAnnotatorTask(BaseTask):
                 return self.TARGET_MERGE_TIMES_INSTRUCTIONS
 
     @property
-    def files(self) -> Dict:
+    def files(self) -> Dict[str, BaseTextGridDocument]:
         return {
             "template": self.template_tg,
             "ref": self.ref_tg,
@@ -467,9 +470,7 @@ class DoubleAnnotatorTask(BaseTask):
             "merged": self.merged_tg,
             "merged_annots": self.merged_annots_tg,
             "merged_times": self.merged_times_tg,
-            "final": self.final_tg,
-            "conflicts_log": self.times_conflicts.merge_conflicts_log
-            if self.times_conflicts is not None else None
+            "final": self.final_tg
         }
 
     @property

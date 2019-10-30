@@ -30,7 +30,7 @@ class TaskLockRequest(Schema):
     lock_status = fields.Bool(required=True)
 
 
-class TaskShort(Schema):
+class TaskShortStatus(Schema):
     id = fields.Str(required=True)
     filename = fields.Str(required=True)
     deadline = fields.Date()
@@ -46,6 +46,14 @@ class TaskShort(Schema):
 class TaskTextGrid(Schema):
     name = fields.Str(required=True)
     is_done = fields.Bool(required=True)
+    id = fields.Str()
+    from .users import UserShortProfile
+    creators = fields.List(fields.Nested(UserShortProfile))
+    created = fields.DateTime()
+
+
+class TaskTextGridList(Schema):
+    names = fields.List(fields.Str)
 
 
 class TaskComment(Schema):
@@ -55,10 +63,9 @@ class TaskComment(Schema):
     creation = fields.Date(required=True)
 
 
-class TaskFullAdmin(TaskShort):
+class TaskFullStatusAdmin(TaskShortStatus):
     """Task full status """
     textgrids = fields.List(fields.Nested(TaskTextGrid))
-    comments = fields.List(fields.Nested(TaskComment))
 
 
 class FrontierMergeConflict(Schema):
@@ -78,7 +85,7 @@ class MergeConflicts(Schema):
     tiers_merges = fields.List(fields.Nested(TierMergeConflicts))
 
 
-class TaskFullAnnotator(TaskShort):
+class TaskFullStatusAnnotator(TaskShortStatus):
     """Task status for the annotator task view"""
     all_statuses = fields.List(fields.Str())
     current_status_idx = fields.Int(required=True)

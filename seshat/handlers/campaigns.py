@@ -9,7 +9,7 @@ from mongoengine import ValidationError, NotUniqueError
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
     CorpusFile
-from seshat.schemas.tasks import TaskShort
+from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..models.campaigns import Campaign
@@ -106,7 +106,7 @@ class ViewCampaignHandler(AdminMethodView):
 @campaigns_blp.route("list/tasks/<campaign_slug>")
 class ViewCampaignHandler(AdminMethodView):
 
-    @campaigns_blp.response(TaskShort(many=True))
+    @campaigns_blp.response(TaskShortStatus(many=True))
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -120,7 +120,7 @@ class GetCampaignCorpusFiles(AdminMethodView):
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return campaign.populate_audio_files()
+        return campaign.files
 
 
 @campaigns_blp.route("wiki/update/<campaign_slug>")
@@ -143,7 +143,6 @@ class WikiViewHandler(LoggedInMethodView):
         """View a campaign's wiki page"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return {"content": campaign.wiki_page}
-
 
 
 @campaigns_blp.route("/subscribe")

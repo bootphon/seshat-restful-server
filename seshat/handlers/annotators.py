@@ -3,7 +3,7 @@ from typing import Dict
 from flask_smorest import Blueprint, abort
 from mongoengine import NotUniqueError, DoesNotExist, ValidationError
 
-from seshat.schemas.tasks import TaskShort
+from seshat.schemas.tasks import TaskShortStatus
 from seshat.schemas.users import AnnotatorEdition, AnnotatorPasswordChange
 from ..handlers.commons import AdminMethodView
 from ..schemas.users import AnnotatorCreation, AnnotatorProfile, AnnotatorDeletion, \
@@ -72,6 +72,7 @@ class AnnotatorChangePasswordHandler(AdminMethodView):
         annotator.salt = salt
         annotator.save()
 
+
 @annotators_blp.route("/view/<username>")
 class AnnotatorFullProfileHandler(AdminMethodView):
 
@@ -85,7 +86,7 @@ class AnnotatorFullProfileHandler(AdminMethodView):
 @annotators_blp.route("/list/tasks/<username>")
 class AnnotatorTasksHandler(AdminMethodView):
 
-    @annotators_blp.response(TaskShort(many=True))
+    @annotators_blp.response(TaskShortStatus(many=True))
     def get(self, username: str):
         annotator: Annotator = Annotator.objects.get(username=username)
         return [task.short_status for task in annotator.assigned_tasks]

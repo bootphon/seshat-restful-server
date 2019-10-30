@@ -6,8 +6,8 @@ from seshat.schemas.users import UserShortProfile
 
 class CorpusFile(Schema):
     """File information: used for task assignment"""
-    filename = fields.Str(required=True)
-    task_count = fields.Int(required=True)
+    path = fields.Str(required=True)
+    tasks_count = fields.Int(required=True)
     type = fields.Str(required=True)
 
 

@@ -1,6 +1,10 @@
 import io
+from typing import List
 
-from flask import Blueprint, send_file, abort
+from flask_smorest import Blueprint, abort
+from flask import send_file
+
+from seshat.schemas.tasks import TaskTextGridList
 from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
 
 from seshat.handlers.commons import AdminMethodView, AnnotatorMethodView
@@ -9,7 +13,7 @@ from .commons import LoggedInMethodView
 downloads_blp = Blueprint("downloads", __name__, url_prefix="/downloads")
 
 
-@downloads_blp.route("/task/<task_id>/starter")
+@downloads_blp.route("task/<task_id>/starter")
 class TaskStarterArchiveDownload(LoggedInMethodView):
 
     def get(self, task_id: str):
@@ -21,7 +25,7 @@ class TaskStarterArchiveDownload(LoggedInMethodView):
                          cache_timeout=0)
 
 
-@downloads_blp.route("/task/<task_id>/current_textgrid")
+@downloads_blp.route("task/<task_id>/current_textgrid")
 class CurrentTextGridDownloadHandler(AnnotatorMethodView):
 
     def get(self, task_id: str):
@@ -36,14 +40,26 @@ class CurrentTextGridDownloadHandler(AnnotatorMethodView):
                          cache_timeout=0)
 
 
-@downloads_blp.route("/task/<task_id>/<file_name>")
+@downloads_blp.route("task/<task_id>/conflict_log")
+class ConflictLogDownloadHandler(AnnotatorMethodView):
+
+    def get(self, task_id: str):
+        task: BaseTask = BaseTask.objects.get(id=task_id)
+        tg_name = task.current_tg_template(self.user)
+        task.log_download(self.user, tg_name)
+        tg_str: str = task.textgrids[tg_name].textgrid.to_str()
+        return send_file(io.BytesIO(tg_str.encode()),
+                         as_attachment=True,
+                         attachment_filename="%s_%s.TextGrid"
+                                             % (task.name, tg_name),
+                         cache_timeout=0)
+
+
+@downloads_blp.route("task/<task_id>")
 class TaskFileDownload(LoggedInMethodView):
 
-    def get(self, task_id: str, file_name: str):
-        task: BaseTask = BaseTask.objects.get(id=task_id)
-        if isinstance(self.user, Annotator):
-            task.log_download(self.user, file_name)
-
+    @staticmethod
+    def retrieve_file(task: BaseTask, file_name: str):
         if isinstance(task.files[file_name], BaseTextGridDocument):
             data = task.files[file_name].textgrid_file.read()
             filename = "%s_%s.TextGrid" % (task.name, file_name)
@@ -52,6 +68,18 @@ class TaskFileDownload(LoggedInMethodView):
             filename = "%s_%s.Conflicts" % (task.name, file_name)
         else:
             return abort(404)
+        return data, filename
+
+    @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
+    def get(self, task_id: str, names: List[str]):
+        task: BaseTask = BaseTask.objects.get(id=task_id)
+        if isinstance(self.user, Annotator):
+            task.log_download(self.user, file_name)
+
+        if len(names) == 1:
+            data, filename = self.retrieve_file(task, names[0])
+        else:  # build a zip
+            pass
 
         return send_file(io.BytesIO(data),
                          as_attachment=True,
@@ -59,7 +87,14 @@ class TaskFileDownload(LoggedInMethodView):
                          cache_timeout=0)
 
 
-@downloads_blp.route("/campaign/<campaign_slug>")
+@downloads_blp.route("textgrid/<textgrid_id>")
+class TextGridDownloadHandler(AdminMethodView):
+
+    def get(self, textgrid_id):
+        return
+
+
+@downloads_blp.route("campaign/<campaign_slug>")
 class FullAnnotArchiveDownload(AdminMethodView):
 
     def get(self, campaign_slug: str):

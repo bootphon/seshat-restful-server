@@ -2,11 +2,11 @@ from typing import Dict
 
 from flask_smorest import Blueprint
 
-from seshat.schemas.tasks import TaskFullAnnotator
+from seshat.schemas.tasks import TaskFullStatusAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from ..models import SingleAnnotatorTask, DoubleAnnotatorTask, Annotator, Campaign, BaseTask
 from ..models.errors import error_log
-from ..schemas.tasks import TaskShort, TasksAssignment, TaskFullAdmin, \
+from ..schemas.tasks import TaskShortStatus, TasksAssignment, TaskFullStatusAdmin, \
     TaskComment, TaskCommentSubmission, \
     TaskTextgridSubmission, TextGridErrors, TaskLockRequest
 
@@ -17,7 +17,7 @@ tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
 @tasks_blp.route("/list/assigned")
 class ListAssignedTasksHandler(AnnotatorMethodView):
 
-    @tasks_blp.response(TaskShort(many=True))
+    @tasks_blp.response(TaskShortStatus(many=True))
     def get(self):
         """Lists all tasks assigned to the currently logged-in annotator"""
         return [task.short_status for task in self.user.assigned_tasks]
@@ -26,7 +26,7 @@ class ListAssignedTasksHandler(AnnotatorMethodView):
 @tasks_blp.route("assign")
 class AssignTasksHandler(AdminMethodView):
 
-    @tasks_blp.arguments(TasksAssignment(many=True))
+    @tasks_blp.arguments(TasksAssignment)
     @tasks_blp.response(code=200)
     def post(self, args: Dict):
         """Assign annotating tasks (linked to an audio file) to annotators"""
@@ -86,7 +86,7 @@ class LockTaskHandler(AdminMethodView):
 @tasks_blp.route("/status/admin/<task_id>")
 class GetAdminTaskDataHandler(AdminMethodView):
 
-    @tasks_blp.response(TaskFullAdmin)
+    @tasks_blp.response(TaskFullStatusAdmin)
     def get(self, task_id: str):
         """Returns the full task status for the admin task view"""
         task: BaseTask = BaseTask.objects.get(task_id=task_id)
@@ -96,7 +96,7 @@ class GetAdminTaskDataHandler(AdminMethodView):
 @tasks_blp.route("/status/annotator/<task_id>")
 class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 
-    @tasks_blp.response(TaskFullAnnotator)
+    @tasks_blp.response(TaskFullStatusAnnotator)
     def get(self, task_id: str):
         """Returns the annotator's task status, for the annotator task view"""
         task: BaseTask = BaseTask.objects.get(task_id=task_id)
