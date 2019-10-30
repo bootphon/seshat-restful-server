@@ -13,10 +13,11 @@ CORS(app)
 app.config.from_object(DebugConfig)
 api = Api(app)
 
-if os.environ["FLASK_CONFIG"] == "dev":
-    app.config.from_object(DebugConfig)
-else:
+if os.environ.get("FLASK_CONFIG") == "prod":
     app.config.from_object(ProductionConfig)
+else: # if en isn't setup, fallback to dev
+    app.config.from_object(DebugConfig)
+
 connect(app.config["MONGODB_SETTINGS"]["db"],
         host=app.config["MONGODB_SETTINGS"]["host"],
         port=app.config["MONGODB_SETTINGS"]["port"], connect=False)
