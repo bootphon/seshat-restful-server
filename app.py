@@ -28,8 +28,7 @@ api.register_blueprint(campaigns_blp)
 api.register_blueprint(annotators_blp)
 api.register_blueprint(analytics_blp)
 api.register_blueprint(tasks_blp)
-# This is a regular flask blueprint, so registered on the "unwrapped" app object
-app.register_blueprint(downloads_blp)
+api.register_blueprint(downloads_blp)
 
 if __name__ == '__main__':
     app.run()
