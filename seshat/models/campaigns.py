@@ -196,13 +196,18 @@ class Campaign(Document):
         return buffer.getvalue()
 
     @property
+    def short_profile(self):
+        return {"slug": self.slug,
+                "name": self.name}
+
+    @property
     def status(self):
         return {
             "slug": self.slug,
             "name": self.name,
             "creator": self.creator.short_profile,
             # TODO use the stats object when it's completed and rightly updated
-            "stats" : {
+            "stats": {
                 "total_tasks": len(self.tasks),
                 "completed_tasks": len([task for task in self.tasks if task.is_done]),
                 "total_files": len(self.populate_audio_files()),

@@ -68,6 +68,11 @@ class CampaignStats(Schema):
     assigned_files = fields.Int(required=True)
 
 
+class CampaignShortProfile(Schema):
+    slug = fields.Str(required=True)
+    name = fields.Str(required=True)
+
+
 class CampaignStatus(Schema):
     slug = fields.Str(required=True)
     name = fields.Str(required=True)
@@ -82,6 +87,7 @@ class CampaignStatus(Schema):
 
 class CampaignWikiPage(Schema):
     content = fields.Str(required=True)
+    profile = fields.Nested(CampaignShortProfile, required=True)
     last_edit = fields.DateTime()
 
 

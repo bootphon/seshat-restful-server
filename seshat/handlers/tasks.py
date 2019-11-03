@@ -71,6 +71,16 @@ class DeleteTaskHandler(AdminMethodView):
         task.delete()
 
 
+@tasks_blp.route("delete/<task_id>/textgrid/<tg_name>")
+class DeleteTaskHandler(AdminMethodView):
+
+    @tasks_blp.response(code=200)
+    def delete(self, task_id: str, tg_name: str):
+        """Delete an assigned task"""
+        task: BaseTask = BaseTask.objects.get(task_id=task_id)
+        # TODO
+
+
 @tasks_blp.route("lock/")
 class LockTaskHandler(AdminMethodView):
 

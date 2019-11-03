@@ -67,14 +67,15 @@ class TaskTextGridListDownload(AdminMethodView):
 
     @staticmethod
     def retrieve_file(task: BaseTask, file_name: str):
-        if isinstance(task.files[file_name], BaseTextGridDocument):
-            data = task.files[file_name].textgrid_file.read()
-            filename = "%s_%s.TextGrid" % (task.name, file_name)
-        elif file_name == "conflicts_log":
-            data = task.files[file_name].encode("utf-8")
-            filename = "%s_%s.Conflicts" % (task.name, file_name)
-        else:
+        try:
+            if isinstance(task.files[file_name], BaseTextGridDocument):
+                data = task.files[file_name].textgrid_file.read()
+                filename = "%s_%s.TextGrid" % (task.name, file_name)
+            else:
+                return abort(404, message="Textgrid hasn't been completed yet")
+        except KeyError:
             return abort(404)
+
         return data, filename
 
     @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
@@ -108,10 +109,10 @@ class TextGridDownloadHandler(AdminMethodView):
     def get(self, textgrid_id):
         """Download a specific textgrid"""
         tg_doc: BaseTextGridDocument = BaseTextGridDocument.objects.get(id=textgrid_id)
+        # TODO : figure out textgrid name based on task/annotators/campaign
         return send_file(tg_doc.textgrid_file,
                          as_attachment=True,
-                         attachment_filename="%s_%s.TextGrid"
-                                             % (task.name, tg_name),
+                         attachment_filename="%s.TextGrid" % textgrid_id,
                          cache_timeout=0)
 
 

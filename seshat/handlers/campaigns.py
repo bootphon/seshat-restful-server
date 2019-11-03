@@ -142,7 +142,8 @@ class WikiViewHandler(LoggedInMethodView):
     def get(self, campaign_slug: str):
         """View a campaign's wiki page"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return {"content": campaign.wiki_page}
+        return {"content": campaign.wiki_page,
+                "profile": campaign.short_profile}
 
 
 @campaigns_blp.route("/subscribe")

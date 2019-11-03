@@ -168,15 +168,18 @@ class BaseTask(Document):
 
     @property
     def short_status(self):
-        return {"id": self.id,
-                "filename": self.data_file,
-                "deadline": self.deadline,
-                "task_type": self.TASK_TYPE,
-                "annotators": [user.id for user in self.annotators],
-                "assigner": self.assigner.short_profile,
-                "creation_time": self.creation_time,
-                "status": self.steps_names[self.current_step],
-                "is_locked": self.is_locked}
+        return {
+            "id": self.id,
+            "filename": self.data_file,
+            "campaign": self.campaign,
+            "deadline": self.deadline,
+            "task_type": self.TASK_TYPE,
+            "annotators": [user.id for user in self.annotators],
+            "assigner": self.assigner.short_profile,
+            "creation_time": self.creation_time,
+            "status": self.steps_names[self.current_step],
+            "is_locked": self.is_locked
+        }
 
     @property
     def admin_status(self):
@@ -188,6 +191,7 @@ class BaseTask(Document):
                 tg_dict.update(tg.task_tg_msg)
 
         return {**self.short_status,
+                "campaign": self.campaign.short_profile,
                 "textgrids": textgrids}
 
     @property

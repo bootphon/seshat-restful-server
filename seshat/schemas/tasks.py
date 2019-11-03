@@ -32,6 +32,7 @@ class TaskLockRequest(Schema):
 
 class TaskShortStatus(Schema):
     id = fields.Str(required=True)
+    campaign_slug = fields.Str(required=True)
     filename = fields.Str(required=True)
     deadline = fields.Date()
     task_type = fields.Str(required=True)
@@ -65,6 +66,8 @@ class TaskComment(Schema):
 
 class TaskFullStatusAdmin(TaskShortStatus):
     """Task full status """
+    from .campaigns import CampaignShortProfile
+    campaign = fields.Nested(CampaignShortProfile, required=True)
     textgrids = fields.List(fields.Nested(TaskTextGrid))
 
 
