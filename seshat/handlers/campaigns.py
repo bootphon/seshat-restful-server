@@ -8,7 +8,7 @@ from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CorpusFile
+    CorpusFile, CampaignWikiPageUpdate
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -126,7 +126,7 @@ class GetCampaignCorpusFiles(AdminMethodView):
 @campaigns_blp.route("wiki/update/<campaign_slug>")
 class WikiUpdateHandler(AdminMethodView):
 
-    @campaigns_blp.arguments(CampaignWikiPage, as_kwargs=True)
+    @campaigns_blp.arguments(CampaignWikiPageUpdate, as_kwargs=True)
     @campaigns_blp.response(code=200)
     def post(self, content: str, campaign_slug: str):
         """Update the campaign's wiki page"""

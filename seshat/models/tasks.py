@@ -198,6 +198,7 @@ class BaseTask(Document):
     def annotator_status(self):
         # TODO
         return {**self.short_status,
+                "current_instructions"
                 "all_statuses": list(self.steps_names.values())}
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):

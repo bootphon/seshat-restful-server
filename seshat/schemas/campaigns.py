@@ -85,6 +85,10 @@ class CampaignStatus(Schema):
     subscribers = fields.List(fields.Str)
 
 
+class CampaignWikiPageUpdate(Schema):
+    content = fields.Str(required=True)
+
+
 class CampaignWikiPage(Schema):
     content = fields.Str(required=True)
     profile = fields.Nested(CampaignShortProfile, required=True)

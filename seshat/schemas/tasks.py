@@ -92,6 +92,7 @@ class TaskFullStatusAnnotator(TaskShortStatus):
     """Task status for the annotator task view"""
     all_statuses = fields.List(fields.Str())
     current_status_idx = fields.Int(required=True)
+    current_instructions = fields.Str(required=True)
     allow_starter_dl = fields.Bool(required=True)
     allow_file_upload = fields.Bool(required=True)
     # optional because when null, no file should be available for DL
