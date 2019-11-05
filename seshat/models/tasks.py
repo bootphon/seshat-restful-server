@@ -109,6 +109,11 @@ class BaseTask(Document):
     def textgrids(self) -> Dict[str, Optional[BaseTextGridDocument]]:
         raise NotImplemented()
 
+    def delete_textgrid(self, tg_name: str):
+        """Just 'forgetting' textgrid for this task, not actually removing the textgrid from the database"""
+        self.__setattr__(tg_name + "_tg", None)
+        self.save()
+
     @property
     def has_started(self):
         raise NotImplemented()
@@ -160,10 +165,6 @@ class BaseTask(Document):
                          file=file_name)
         )
         self.save()
-
-    @property
-    def files(self) -> Dict[str, BaseTextGridDocument]:
-        raise NotImplemented()
 
     @property
     def short_status(self):

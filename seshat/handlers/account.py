@@ -24,17 +24,17 @@ class HttpErrorCode(Schema):
 class LoginHandler(MethodView):
 
     @accounts_blp.arguments(LoginCredentials)
-    @accounts_blp.response(ConnectionToken, code=200)
+    @accounts_blp.response(ConnectionToken)
     def post(self, args):
         """Log in to the account. Returns the connection token"""
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
         if user is None:
-            return abort(401, "Invalid login or password")
+            return abort(401, message="Invalid login or password")
 
         if user.check_password(args["password"]):
             return {"token": user.get_token()}
         else:
-            return abort(401, "Invalid login or password")
+            return abort(401, mesage="Invalid login or password")
 
 
 @accounts_blp.route("/data")

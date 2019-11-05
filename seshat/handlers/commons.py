@@ -23,7 +23,7 @@ class LoggedInMethodView(MethodView):
             token_data = jwt.decode(token, current_app.config["SECRET_KEY"],
                                     algorithm="HS256")
         except DecodeError:
-            return abort(500, message="Invalid token")
+            return abort(403, message="Invalid token")
 
         self.user = User.objects.get(username=token_data["username"])
         self.user.check_token(token)

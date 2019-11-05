@@ -220,6 +220,5 @@ class Campaign(Document):
             "subscribers": [user.username for user in self.subscribers]
         }
 
-Campaign.register_delete_rule(BaseTextGridDocument, "campaign", NULLIFY)
 signals.post_delete.connect(Campaign.post_delete_cleanup, sender=Campaign)
 BaseTask.register_delete_rule(Campaign, 'tasks', PULL)
