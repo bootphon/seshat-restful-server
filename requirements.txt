@@ -12,3 +12,4 @@ marshmallow
 pyjwt
 dataclasses
 blinker
+python-dateutil

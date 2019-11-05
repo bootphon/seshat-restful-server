@@ -18,7 +18,7 @@ class BaseTextGridDocument(Document):
     textgrid_file = FileField(required=True)
     task = ReferenceField('BaseTask')
     checking_scheme: TextGridCheckingScheme = ReferenceField(TextGridCheckingScheme)
-    creators: List['Annotator'] = ListField(ReferenceField('Annotator'))
+    creators: List['User'] = ListField(ReferenceField('User'))
     creation_time = DateTimeField(default=datetime.now, required=True)
     meta = {'allow_inheritance': True,
             'abstract': True}

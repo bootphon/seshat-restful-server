@@ -188,7 +188,7 @@ class Campaign(Document):
                 task_folder = (zip_folder /
                                Path(task_datafile) /
                                Path(task_annotators))
-                for tg_name, tg_doc in task.files.items():
+                for tg_name, tg_doc in task.textgrids.items():
                     if tg_doc is not None:
                         tg_archpath = task_folder / Path(tg_name + ".TextGrid")
                         zfile.writestr(str(tg_archpath), tg_doc.to_str())
@@ -216,7 +216,7 @@ class Campaign(Document):
             "corpus_path": self.corpus_path,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
-            "annotators": self.annotators,
+            "annotators": [annotator.short_profile for annotator in self.annotators],
             "subscribers": [user.username for user in self.subscribers]
         }
 

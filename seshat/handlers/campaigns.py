@@ -51,12 +51,14 @@ class CampaignAdminHandler(AdminMethodView):
             else:
                 corpus_path = args["data_folder"]
             campaign_slug = slugify.slugify(args["name"])
+            wiki_page = "# %s's wiki page\n\nNothing for now..." % args["name"]
             new_campaign = Campaign(name=args["name"],
                                     slug=campaign_slug,
                                     description=args["description"],
                                     corpus_path=corpus_path,
                                     check_textgrids=args["check_textgrids"],
                                     serve_audio=args["enable_audio_dl"],
+                                    wiki_page=wiki_page,
                                     creator=self.user,
                                     subscribers=[self.user])
             new_campaign.save()

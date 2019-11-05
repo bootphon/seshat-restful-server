@@ -81,7 +81,8 @@ class CampaignStatus(Schema):
     corpus_path = fields.Str(required=True)
     tiers_number = fields.Int()
     check_textgrids = fields.Bool(required=True)
-    annotators = fields.List(fields.Str())
+    from .users import UserShortProfile
+    annotators = fields.List(fields.Nested(UserShortProfile))
     subscribers = fields.List(fields.Str)
 
 

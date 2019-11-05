@@ -116,7 +116,7 @@ class TextGridDownloadHandler(AdminMethodView):
                          cache_timeout=0)
 
 
-@downloads_blp.route("campaign/<campaign_slug>")
+@downloads_blp.route("campaign/archive/<campaign_slug>")
 class FullAnnotArchiveDownload(AdminMethodView):
 
     def get(self, campaign_slug: str):
@@ -125,4 +125,5 @@ class FullAnnotArchiveDownload(AdminMethodView):
 
         return send_file(io.BytesIO(campaign.get_full_annots_archive()),
                          attachment_filename=campaign.slug + ".zip",
+                         as_attachment=True,
                          cache_timeout=0)

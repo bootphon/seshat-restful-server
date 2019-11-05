@@ -66,7 +66,6 @@ class BaseTask(Document):
     is_locked = BooleanField(default=False)
     data_file = StringField(required=True)
     discussion = EmbeddedDocumentListField(TaskComment)
-    flagged = BooleanField(default=False)
     deadline = DateField()
     file_downloads = EmbeddedDocumentListField(FileDownload)
     file_uploads = EmbeddedDocumentListField(FileUpload)
@@ -189,6 +188,7 @@ class BaseTask(Document):
                        "is_done": bool(tg)}
             if tg is not None:
                 tg_dict.update(tg.task_tg_msg)
+            textgrids.append(tg_dict)
 
         return {**self.short_status,
                 "campaign": self.campaign.short_profile,
@@ -271,7 +271,7 @@ class SingleAnnotatorTask(BaseTask):
             return "final"
 
     @property
-    def files(self) -> Dict:
+    def textgrids(self) -> Dict[str, Optional[BaseTextGridDocument]]:
         return {
             "template": self.template_tg,
             "final": self.final_tg
@@ -467,7 +467,7 @@ class DoubleAnnotatorTask(BaseTask):
                 return self.TARGET_MERGE_TIMES_INSTRUCTIONS
 
     @property
-    def files(self) -> Dict[str, BaseTextGridDocument]:
+    def textgrids(self) -> Dict[str, Optional[BaseTextGridDocument]]:
         return {
             "template": self.template_tg,
             "ref": self.ref_tg,
