@@ -4,8 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import List
 
-from flask_smorest import Blueprint, abort
-from flask import send_file
+from flask import send_file, Blueprint, abort
 
 from seshat.schemas.tasks import TaskTextGridList
 from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
@@ -78,7 +77,6 @@ class TaskTextGridListDownload(AdminMethodView):
 
         return data, filename
 
-    @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
     def get(self, task_id: str, names: List[str]):
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if len(names) == 1:

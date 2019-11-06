@@ -68,21 +68,22 @@ class TextGridCheckingScheme(Document):
         for tier_specs in scheme_data:
             if tier_specs["validate_tier"]:
                 new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
-                                                                           required=tier_specs["required"])
+                                                required=tier_specs["required"])
             else:
-                if tier_specs["content_type"] == "CATEGORIES":
+                if tier_specs.get("content_type") == "CATEGORIES":
                     new_tier_scheme = CategoricalTier(name=tier_specs["name"],
-                                                                                 required=tier_specs["required"],
-                                                                                 allow_empty=tier_specs["allow_empty"],
-                                                                                 categories=tier_specs["categories"])
-                elif tier_specs["content_type"] == "PARSED":
+                                                      required=tier_specs["required"],
+                                                      allow_empty=tier_specs["allow_empty"],
+                                                      categories=tier_specs["categories"])
+                elif tier_specs.get("content_type") == "PARSED":
                     new_tier_scheme = ParsedTier(name=tier_specs["name"],
-                                                                            required=tier_specs["required"],
-                                                                            allow_empty=tier_specs["allow_empty"],
-                                                                            parser_name=tier_specs["parser_name"])
+                                                 required=tier_specs["required"],
+                                                 allow_empty=tier_specs["allow_empty"],
+                                                 parser_name=tier_specs["parser_name"])
 
                 else:
-                    raise ValueError("Invalid content type")
+                    new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
+                                                    required=tier_specs["required"])
             new_scheme.tiers_specs[tier_specs["name"]] = new_tier_scheme
         return new_scheme
 

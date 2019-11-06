@@ -43,11 +43,6 @@ class AssignTasksHandler(AdminMethodView):
             annotators = {"reference": reference,
                           "target": target}
 
-        # parsing the ISO-8601 formated date from JS
-        deadline = args.get("deadline")
-        if deadline is not None:
-            deadline = dateutil.parser.isoparse(deadline)
-
         for file in args["audio_files"]:
             new_task: BaseTask = task_class(**annotators)
             template_doc = campaign.gen_template_tg(file)
@@ -57,7 +52,7 @@ class AssignTasksHandler(AdminMethodView):
             new_task.campaign = campaign
             new_task.data_file = file
             new_task.assigner = self.user
-            new_task.deadline = deadline
+            new_task.deadline = args.get("deadline")
             new_task.save()
             template_doc.task = new_task
             template_doc.save()

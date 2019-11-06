@@ -31,7 +31,7 @@ class TierSpecifications(Schema):
 
     @validates("content_type")
     def validate_content_type(self, value: str):
-        if value not in ("CATEGORIES", "PARSED", "NONE"):
+        if value not in ("CATEGORICAL", "PARSED", "NONE"):
             raise ValidationError("Invalid content type category.")
 
 
