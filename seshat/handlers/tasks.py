@@ -114,7 +114,7 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
     def get(self, task_id: str):
         """Returns the annotator's task status, for the annotator task view"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
-        return task.annotator_status
+        return task.get_annotator_status(self.user)
 
 
 @tasks_blp.route("/submit/<task_id>")

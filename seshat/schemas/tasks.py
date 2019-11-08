@@ -40,7 +40,7 @@ class TaskShortStatus(Schema):
     from .users import UserShortProfile
     assigner = fields.Nested(UserShortProfile, required=True)
     creation_time = fields.DateTime(required=True)
-    status = fields.Str(required=True)
+    step = fields.Str(required=True)
     is_locked = fields.Bool(required=True)
 
 
@@ -90,13 +90,11 @@ class MergeConflicts(Schema):
 
 class TaskFullStatusAnnotator(TaskShortStatus):
     """Task status for the annotator task view"""
-    all_statuses = fields.List(fields.Str())
-    current_status_idx = fields.Int(required=True)
+    all_steps = fields.List(fields.Str())
+    current_step_idx = fields.Int(required=True)
     current_instructions = fields.Str(required=True)
     allow_starter_dl = fields.Bool(required=True)
     allow_file_upload = fields.Bool(required=True)
-    # optional because when null, no file should be available for DL
-    current_tg_download = fields.Str()
     #  This field is optional because it's only filled in a double annotator task
     frontiers_merge_table = fields.Nested(MergeConflicts)
 

@@ -92,12 +92,22 @@ class BaseTask(Document):
     textgrid in the archive."""
 
     @property
-    def current_step(self):
-        return self.Steps.IN_PROGRESS if not self.is_done else self.Steps.DONE
+    def current_step(self) -> Steps:
+        if self.has_started:
+            return self.Steps.AWAITING_START
+
+        if self.is_done:
+            return self.Steps.DONE
+        else:
+            return self.Steps.IN_PROGRESS
 
     @property
     def annotators(self):
         raise NotImplemented()
+
+    @property
+    def has_started(self):
+        return len(self.file_downloads) > 0
 
     @property
     def name(self):
@@ -111,11 +121,17 @@ class BaseTask(Document):
 
     def delete_textgrid(self, tg_name: str):
         """Just 'forgetting' textgrid for this task, not actually removing the textgrid from the database"""
+        # TODO : add a "reset to step x" functionnality
         self.__setattr__(tg_name + "_tg", None)
+        self.is_done = False
         self.save()
 
     @property
-    def has_started(self):
+    def allow_starter_zip_dl(self) -> bool:
+        raise NotImplemented()
+
+    @property
+    def allow_file_upload(self) -> bool:
         raise NotImplemented()
 
     def current_instructions(self, user: 'Annotator') -> str:
@@ -177,7 +193,7 @@ class BaseTask(Document):
             "annotators": [user.id for user in self.annotators],
             "assigner": self.assigner.short_profile,
             "creation_time": self.creation_time,
-            "status": self.steps_names[self.current_step],
+            "step": self.steps_names[self.current_step],
             "is_locked": self.is_locked
         }
 
@@ -195,12 +211,15 @@ class BaseTask(Document):
                 "campaign": self.campaign.short_profile,
                 "textgrids": textgrids}
 
-    @property
-    def annotator_status(self):
-        # TODO
-        return {**self.short_status,
-                "current_instructions"
-                "all_statuses": list(self.steps_names.values())}
+    def get_annotator_status(self, annotator: 'Annotator'):
+        return {
+            **self.short_status,
+            "all_steps": [self.steps_names[step] for step in self.Steps],
+            "current_step_idx": self.current_step.value,
+            "current_instructions": self.current_instructions(annotator),
+            "allow_start_dl": self.allow_starter_zip_dl,
+            "allow_file_upload": self.allow_file_upload,
+        }
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         """Check textgrid, and if passes the validation tests, save it"""
@@ -261,6 +280,10 @@ class SingleAnnotatorTask(BaseTask):
     @property
     def annotators(self):
         return [self.annotator]
+
+    @property
+    def allow_starter_zip_dl(self):
+        return self.current_step in (self.Steps.AWAITING_START, self.Steps.IN_PROGRESS)
 
     def current_instructions(self, user: 'Annotator') -> str:
         return self.INITIAL_TEMPLATE_INSTRUCTIONS
@@ -332,12 +355,11 @@ class MergeResults(EmbeddedDocument):
                         time_b=frontier_merge.time_b,
                         index_before=frontier_merge.interval_index_before)
 
-    @property
-    def merge_conflicts_log(self) -> str:
-        log_str = StringIO()
-        for error in self.to_merge_conflicts_errors():
-            log_str.write(error.msg + "\n")
-        return log_str.getvalue()
+    def to_msg(self):
+        pass # TODO
+
+    def to_csv(self):
+        pass # TODO
 
 
 class DoubleAnnotatorTask(BaseTask):
@@ -361,65 +383,71 @@ class DoubleAnnotatorTask(BaseTask):
     class Steps(Enum):
         AWAITING_START = 1
         PARALLEL = 2
-        MERGING_ANNOTS = 3
-        MERGING_TIMES = 4
-        DONE = 5
+        TIERS_AGREEMENT = 3
+        MERGING_ANNOTS = 4
+        MERGING_TIMES = 5
+        DONE = 6
 
     steps_names = {
         Steps.AWAITING_START: "Awaiting start",
         Steps.PARALLEL: "Parallel Annotations",
+        Steps.TIERS_AGREEMENT: "Agreement on tiers",
         Steps.MERGING_ANNOTS: "Merging annotations",
         Steps.MERGING_TIMES: "Merging Times"
     }
 
     # TODO : translate all of these
     INITIAL_TEMPLATE_INSTRUCTIONS = \
-        """Annote le fichier selon le protocole défini au préalable avec ton 
-        encadrante."""
+        """Annotate the file using the protocol defined by your annotation manager"""
 
     WAIT_FOR_OTHER_ANNOTATOR_INSTRUCTIONS = \
-        """Attends que l'annotatrice dite '%s' termine son travail d'annotation 
-        pour poursuivre. Tu peux continuer à soumettre pour améliorer ton TextGrid 
-        actuel si tu le juge perfectible."""
+        """Wait for the %s annotator to finish her job. Meanwhile, if you think your work is worth 
+        improving, you can still upload new versions of your annotated file."""
 
     CANT_MAKE_MERGED = \
-        """Vos TextGrids de peuvent être fusionnés en un seul pour l'instant à cause d'incohérences
-        sur les Tiers. Mettez vous d'accord sur les tiers contenu dans les textgrids"""
+        """Your TextGrid can't be merged for now because some tiers mismatch. Please make sure that the
+        tiers in both your annotated file and your partner's are the same."""
 
     REF_MERGE_ANNOTS_INSTRUCTIONS = \
-        """Il faut maintenant que l'annotatrice dite 'target' te rejoigne pour 
-        que vous puissiez vous mettre  d'accord sur le contenu des annotations 
-        et sur leur nombre. L'objectif est d'avoir, pour tout les Tiers, 
-        le même nombre d'annotations avec la même valeur."""
+        """The 'Target' annotator should join you at this point. Your job is to find some 
+        agreement on the number of annotations and their content. Your goal is to have, for each pair 
+        of matching reference and target tier, the exact same amount of annotations with the same values. 
+        You don't have to agree on the timing of those annotations yet."""
 
     TARGET_MERGE_ANNOTS_INSTRUCTIONS = \
-        """Rejoins maintenant l'annotatrice référence pour pouvoir, ensemble, 
-        se mettre d'accord sur vos annotations respectives. La fusion 
-        se fait sur sa machine."""
+        """Joint the reference annotator now, so you can (together) find an agreement based on 
+        your respective annotations. The merged file is to be edited on the reference annotator's 
+        computer."""
 
     REF_MERGE_TIMES_INSTRUCTIONS = \
-        """Toujours ensemble avec l'annotatrice target, vous devez faire en 
-        sorte que les frontières qui n'ont pas pu être fusionnées 
-        (indiquées ci-dessous) soient plus proches (%ims).""" \
+        """Together with the Target annotator, make sure the Frontiers that still couldn't
+         be merged are closer to one another (a difference smaller than %ims). 
+         The Frontiers that had too big of a mismatch are listed underneath.""" \
         % int(MergedAnnotsTextGrid.DIFF_THRESHOLD * 1000)
 
     TARGET_MERGE_TIMES_INSTRUCTIONS = \
-        """Rejoins maintenant l'annotatrice référence pour pouvoir, 
-        ensemble, terminer la fusion des temps. La fusion se fait sur sa 
-        machine. Pour que tu puisses l'aider, les frontières à fusionner sont 
-        listées ci-dessous. La fusions se fait sur sa machine."""
+        """Still with the Reference annotator, finish merging the Frontier's timing mismatches 
+        of the merged file. The merging has to be done on her computer. As a way to help her, 
+        the Frontiers that had too big of a mismatch are listed underneath."""
 
     @property
-    def current_step(self):
-        if not self.is_done:
-            if self.ref_tg is None or self.target_tg is None:
-                return self.Steps.PARALLEL
-            elif self.merged_annots_tg is None:
-                return self.Steps.MERGING_ANNOTS
-            else:
-                return self.Steps.MERGING_TIMES
-        else:
+    def current_step(self) -> Steps:
+        if not self.has_started:
+            return self.Steps.AWAITING_START
+
+        if self.is_done:
             return self.Steps.DONE
+
+        if self.merged_annots_tg is not None:
+            return self.Steps.MERGING_TIMES
+
+        if self.merged_tg is not None:
+            return self.Steps.MERGING_ANNOTS
+
+        if self.target_tg is not None and self.ref_tg is not None:
+            return self.Steps.TIERS_AGREEMENT
+
+        return self.Steps.PARALLEL
 
     @property
     def annotators(self):
@@ -479,11 +507,6 @@ class DoubleAnnotatorTask(BaseTask):
             "final": self.final_tg
         }
 
-    @property
-    def has_started(self):
-        return self.ref_tg is not None or self.target_tg is not None
-
-
     def current_tg_template(self, user: 'Annotator') -> str:
         if self.merged_tg is None:
             if user == self.reference:
@@ -502,6 +525,13 @@ class DoubleAnnotatorTask(BaseTask):
             return "merged_times"
         else:
             return "final"
+
+    def get_annotator_status(self, annotator: 'Annotator'):
+        if self.current_step == self.Steps.MERGING_TIMES:
+            return {**super().get_annotator_status(annotator),
+                    "frontiers_merge_table": self.times_conflicts.to_msg()}
+        else:
+            return super().get_annotator_status(annotator)
 
     def process_ref(self, textgrid: str):
         """Handles the submission of a textgrid sent by the reference annotator"""
