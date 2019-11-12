@@ -46,7 +46,7 @@ class TaskShortStatus(Schema):
 
 class TaskTextGrid(Schema):
     name = fields.Str(required=True)
-    is_done = fields.Bool(required=True)
+    has_been_submitted = fields.Bool(required=True)
     id = fields.Str()
     from .users import UserShortProfile
     creators = fields.List(fields.Nested(UserShortProfile))
@@ -107,7 +107,7 @@ class TaskTextgridSubmission(Schema):
     textgrid_str = fields.Str(required=True)
 
 
-class AnnotationErrors(Schema):
+class AnnotationError(Schema):
     tier = fields.Str(required=True)
     msg = fields.Str(required=True)
     annotation = fields.Str(required=True)
@@ -143,4 +143,4 @@ class TextGridErrors(Schema):
     annot_mismatch = fields.List(fields.Nested(AnnotMismatchError))
     time_conflict = fields.List(fields.Nested(TimeMergeError))
     annot = fields.Dict(keys=fields.Str(),
-                        values=fields.Nested(AnnotationErrors))
+                        values=fields.List(fields.Nested(AnnotationError)))

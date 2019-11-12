@@ -1,7 +1,6 @@
 from typing import Dict
 
-import dateutil
-from flask_smorest import Blueprint
+from flask_smorest import Blueprint, abort
 
 from seshat.schemas.tasks import TaskFullStatusAnnotator
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
@@ -121,12 +120,12 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
-    @tasks_blp.response(TextGridErrors, code=403)
+    @tasks_blp.response(TextGridErrors)
     def post(self, args, task_id: str):
         """Textgrid submission handler"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
-            return
+            return abort(403, message="Task is locked")
         error_log.flush()
         task.submit_textgrid(args["textgrid_str"], self.user)
         return error_log.to_errors_summary()
@@ -136,13 +135,13 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
 class ValidateTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission)
-    @tasks_blp.response(TextGridErrors, code=403)
+    @tasks_blp.response(TextGridErrors)
     def post(self, task_id: str, args):
         """Submits a textgrid to a task. The task will figure out by itself
         the current step it's supposed to belong to, and return any validation error"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
-            return
+            return abort(403, message="Task is locked")
         error_log.flush()
         task.validate_textgrid(args["textgrid_str"], self.user)
         return error_log.to_errors_summary()

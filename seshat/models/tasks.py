@@ -78,12 +78,10 @@ class BaseTask(Document):
 
     class Steps(Enum):
         AWAITING_START = 1
-        IN_PROGRESS = 2
-        DONE = 3
+        DONE = 2
 
     steps_names = {
         Steps.AWAITING_START: "Awaiting start",
-        Steps.IN_PROGRESS: "In Progress",
         Steps.DONE: "Done"
     }
 
@@ -95,11 +93,8 @@ class BaseTask(Document):
     def current_step(self) -> Steps:
         if self.has_started:
             return self.Steps.AWAITING_START
-
-        if self.is_done:
-            return self.Steps.DONE
         else:
-            return self.Steps.IN_PROGRESS
+            return self.Steps.DONE
 
     @property
     def annotators(self):
@@ -202,7 +197,7 @@ class BaseTask(Document):
         textgrids = []
         for tg_name, tg in self.textgrids.items():
             tg_dict = {"name": tg_name,
-                       "is_done": bool(tg)}
+                       "has_been_submitted": bool(tg)}
             if tg is not None:
                 tg_dict.update(tg.task_tg_msg)
             textgrids.append(tg_dict)
@@ -276,6 +271,27 @@ class BaseTask(Document):
 class SingleAnnotatorTask(BaseTask):
     TASK_TYPE = "Single Annotator"
     annotator = ReferenceField('Annotator', required=True)
+
+    class Steps(Enum):
+        AWAITING_START = 1
+        IN_PROGRESS = 2
+        DONE = 3
+
+    steps_names = {
+        Steps.AWAITING_START: "Awaiting start",
+        Steps.IN_PROGRESS: "In Progress",
+        Steps.DONE: "Done"
+    }
+
+    @property
+    def current_step(self) -> Steps:
+        if self.has_started:
+            return self.Steps.AWAITING_START
+
+        if self.is_done:
+            return self.Steps.DONE
+        else:
+            return self.Steps.IN_PROGRESS
 
     @property
     def annotators(self):
@@ -396,7 +412,6 @@ class DoubleAnnotatorTask(BaseTask):
         Steps.MERGING_TIMES: "Merging Times"
     }
 
-    # TODO : translate all of these
     INITIAL_TEMPLATE_INSTRUCTIONS = \
         """Annotate the file using the protocol defined by your annotation manager"""
 
