@@ -42,6 +42,7 @@ class TaskShortStatus(Schema):
     creation_time = fields.DateTime(required=True)
     step = fields.Str(required=True)
     is_locked = fields.Bool(required=True)
+    is_done = fields.Bool(required=True)
 
 
 class TaskTextGrid(Schema):
@@ -71,21 +72,14 @@ class TaskFullStatusAdmin(TaskShortStatus):
     textgrids = fields.List(fields.Nested(TaskTextGrid))
 
 
-class FrontierMergeConflict(Schema):
-    time_a = fields.Float(required=True)
-    time_b = fields.Float(required=True)
-    interval_index_before = fields.Int(required=True)
-    interval_index_after = fields.Int(required=True)
-
-
-class TierMergeConflicts(Schema):
+class TimeMergeError(Schema):
     tier_a = fields.Str(required=True)
     tier_b = fields.Str(required=True)
-    frontiers_merge = fields.List(fields.Nested(FrontierMergeConflict))
-
-
-class MergeConflicts(Schema):
-    tiers_merges = fields.List(fields.Nested(TierMergeConflicts))
+    time_a = fields.Int(required=True)
+    time_b = fields.Int(required=True)
+    index_before = fields.Int(required=True)
+    index_after = fields.Int(required=True)
+    threshold = fields.Float(required=True)
 
 
 class TaskFullStatusAnnotator(TaskShortStatus):
@@ -96,7 +90,7 @@ class TaskFullStatusAnnotator(TaskShortStatus):
     allow_starter_dl = fields.Bool(required=True)
     allow_file_upload = fields.Bool(required=True)
     #  This field is optional because it's only filled in a double annotator task
-    frontiers_merge_table = fields.Nested(MergeConflicts)
+    frontiers_merge_table = fields.List(fields.Nested(TimeMergeError))
 
 
 class TaskCommentSubmission(Schema):
@@ -126,16 +120,6 @@ class AnnotMismatchError(Schema):
     ref_annot = fields.Str(required=True)
     target_annot = fields.Str(required=True)
     index = fields.Int(required=True)
-
-
-class TimeMergeError(Schema):
-    tier_a = fields.Str(required=True)
-    tier_b = fields.Str(required=True)
-    time_a = fields.Int(required=True)
-    time_b = fields.Int(required=True)
-    index_before = fields.Int(required=True)
-    index_after = fields.Int(required=True)
-    threshold = fields.Float(required=True)
 
 
 class TextGridErrors(Schema):

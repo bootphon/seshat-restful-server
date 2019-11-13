@@ -91,7 +91,7 @@ class BaseTask(Document):
 
     @property
     def current_step(self) -> Steps:
-        if self.has_started:
+        if not self.has_started:
             return self.Steps.AWAITING_START
         else:
             return self.Steps.DONE
@@ -189,7 +189,8 @@ class BaseTask(Document):
             "assigner": self.assigner.short_profile,
             "creation_time": self.creation_time,
             "step": self.steps_names[self.current_step],
-            "is_locked": self.is_locked
+            "is_locked": self.is_locked,
+            "is_done": self.is_done
         }
 
     @property
@@ -212,7 +213,7 @@ class BaseTask(Document):
             "all_steps": [self.steps_names[step] for step in self.Steps],
             "current_step_idx": self.current_step.value,
             "current_instructions": self.current_instructions(annotator),
-            "allow_start_dl": self.allow_starter_zip_dl,
+            "allow_starter_dl": self.allow_starter_zip_dl,
             "allow_file_upload": self.allow_file_upload,
         }
 
@@ -273,9 +274,9 @@ class SingleAnnotatorTask(BaseTask):
     annotator = ReferenceField('Annotator', required=True)
 
     class Steps(Enum):
-        AWAITING_START = 1
-        IN_PROGRESS = 2
-        DONE = 3
+        AWAITING_START = 0
+        IN_PROGRESS = 1
+        DONE = 2
 
     steps_names = {
         Steps.AWAITING_START: "Awaiting start",
@@ -285,7 +286,7 @@ class SingleAnnotatorTask(BaseTask):
 
     @property
     def current_step(self) -> Steps:
-        if self.has_started:
+        if not self.has_started:
             return self.Steps.AWAITING_START
 
         if self.is_done:
@@ -296,6 +297,10 @@ class SingleAnnotatorTask(BaseTask):
     @property
     def annotators(self):
         return [self.annotator]
+
+    @property
+    def allow_file_upload(self) -> bool:
+        return True
 
     @property
     def allow_starter_zip_dl(self):
@@ -371,15 +376,9 @@ class MergeResults(EmbeddedDocument):
                         time_b=frontier_merge.time_b,
                         index_before=frontier_merge.interval_index_before)
 
-    def to_msg(self):
-        pass # TODO
-
-    def to_csv(self):
-        pass # TODO
-
 
 class DoubleAnnotatorTask(BaseTask):
-    TASK_TYPE = "Double annotateurs"
+    TASK_TYPE = "Double Annotators"
     reference = ReferenceField('Annotator', required=True)
     target = ReferenceField('Annotator', required=True)
     # fully annotated textgrid from the ref annotator
@@ -397,12 +396,12 @@ class DoubleAnnotatorTask(BaseTask):
     merged_times_tg = StringField()
 
     class Steps(Enum):
-        AWAITING_START = 1
-        PARALLEL = 2
-        TIERS_AGREEMENT = 3
-        MERGING_ANNOTS = 4
-        MERGING_TIMES = 5
-        DONE = 6
+        AWAITING_START = 0
+        PARALLEL = 1
+        TIERS_AGREEMENT = 2
+        MERGING_ANNOTS = 3
+        MERGING_TIMES = 4
+        DONE = 5
 
     steps_names = {
         Steps.AWAITING_START: "Awaiting start",
@@ -544,7 +543,8 @@ class DoubleAnnotatorTask(BaseTask):
     def get_annotator_status(self, annotator: 'Annotator'):
         if self.current_step == self.Steps.MERGING_TIMES:
             return {**super().get_annotator_status(annotator),
-                    "frontiers_merge_table": self.times_conflicts.to_msg()}
+                    "frontiers_merge_table": [error.to_msg() for error
+                                              in self.times_conflicts.to_merge_conflicts_errors()]}
         else:
             return super().get_annotator_status(annotator)
 

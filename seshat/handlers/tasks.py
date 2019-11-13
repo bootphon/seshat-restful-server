@@ -115,7 +115,6 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
         task: BaseTask = BaseTask.objects.get(id=task_id)
         return task.get_annotator_status(self.user)
 
-
 @tasks_blp.route("/submit/<task_id>")
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
