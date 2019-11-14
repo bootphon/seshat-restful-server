@@ -32,7 +32,8 @@ class TaskLockRequest(Schema):
 
 class TaskShortStatus(Schema):
     id = fields.Str(required=True)
-    campaign_slug = fields.Str(required=True)
+    from .campaigns import CampaignShortProfile
+    campaign = fields.Nested(CampaignShortProfile)
     filename = fields.Str(required=True)
     deadline = fields.Date()
     task_type = fields.Str(required=True)

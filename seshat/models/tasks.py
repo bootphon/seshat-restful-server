@@ -62,6 +62,7 @@ class BaseTask(Document):
     assigner = ReferenceField('Admin', required=True)
     creation_time = DateTimeField(default=datetime.now)
     last_update = DateTimeField(default=datetime.now)
+    finish_time = DateTimeField()
     is_done = BooleanField(default=False)
     is_locked = BooleanField(default=False)
     data_file = StringField(required=True)
@@ -182,7 +183,7 @@ class BaseTask(Document):
         return {
             "id": self.id,
             "filename": self.data_file,
-            "campaign": self.campaign,
+            "campaign": self.campaign.short_profile,
             "deadline": self.deadline,
             "task_type": self.TASK_TYPE,
             "annotators": [user.id for user in self.annotators],
@@ -331,6 +332,7 @@ class SingleAnnotatorTask(BaseTask):
         if not error_log.has_errors:
             self.final_tg = tg
             self.is_done = True
+            self.finish_time = datetime.now()
             self.notify_done()
 
         self.cascade_save()
@@ -592,6 +594,7 @@ class DoubleAnnotatorTask(BaseTask):
                 final_tg, _ = tg.check_times_merging()
                 self.final_tg = SingleAnnotatorTextGrid.from_textgrid_obj(final_tg, self.annotators, self)
                 self.is_done = True
+                self.finish_time = datetime.now()
                 self.notify_done()
 
     def process_target(self, textgrid: str):
