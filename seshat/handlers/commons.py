@@ -18,7 +18,12 @@ class LoggedInMethodView(MethodView):
         pass
 
     def dispatch_request(self, *args, **kwargs):
-        token = request.headers["Auth-token"]
+        # retrieving the token from the headers
+        token = request.headers.get("Auth-token")
+        # if not present, trying to fetch it from the URL get parameters
+        if token is None:
+            token = request.args.get("token")
+
         try:
             token_data = jwt.decode(token, current_app.config["SECRET_KEY"],
                                     algorithm="HS256")

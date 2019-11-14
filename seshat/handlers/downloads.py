@@ -4,13 +4,13 @@ from io import BytesIO
 from pathlib import Path
 from typing import List
 
-from flask import send_file, Blueprint, abort
-
-from seshat.schemas.tasks import TaskTextGridList
-from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
+from flask import send_file, abort
+from flask_smorest import Blueprint
 
 from seshat.handlers.commons import AdminMethodView, AnnotatorMethodView
+from seshat.schemas.tasks import TaskTextGridList
 from .commons import LoggedInMethodView
+from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
 
 downloads_blp = Blueprint("downloads", __name__, url_prefix="/downloads")
 
@@ -77,6 +77,7 @@ class TaskTextGridListDownload(AdminMethodView):
 
         return data, filename
 
+    @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
     def get(self, task_id: str, names: List[str]):
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if len(names) == 1:
@@ -125,3 +126,4 @@ class FullAnnotArchiveDownload(AdminMethodView):
                          attachment_filename=campaign.slug + ".zip",
                          as_attachment=True,
                          cache_timeout=0)
+

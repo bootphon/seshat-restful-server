@@ -77,11 +77,11 @@ class BaseTask(Document):
     final_tg = ReferenceField(BaseTextGridDocument)
 
     class Steps(Enum):
-        AWAITING_START = 1
+        PENDING = 1
         DONE = 2
 
     steps_names = {
-        Steps.AWAITING_START: "Awaiting start",
+        Steps.PENDING: "Pending",
         Steps.DONE: "Done"
     }
 
@@ -92,7 +92,7 @@ class BaseTask(Document):
     @property
     def current_step(self) -> Steps:
         if not self.has_started:
-            return self.Steps.AWAITING_START
+            return self.Steps.PENDING
         else:
             return self.Steps.DONE
 
@@ -274,12 +274,12 @@ class SingleAnnotatorTask(BaseTask):
     annotator = ReferenceField('Annotator', required=True)
 
     class Steps(Enum):
-        AWAITING_START = 0
+        PENDING = 0
         IN_PROGRESS = 1
         DONE = 2
 
     steps_names = {
-        Steps.AWAITING_START: "Awaiting start",
+        Steps.PENDING: "Pending",
         Steps.IN_PROGRESS: "In Progress",
         Steps.DONE: "Done"
     }
@@ -287,7 +287,7 @@ class SingleAnnotatorTask(BaseTask):
     @property
     def current_step(self) -> Steps:
         if not self.has_started:
-            return self.Steps.AWAITING_START
+            return self.Steps.PENDING
 
         if self.is_done:
             return self.Steps.DONE
@@ -304,7 +304,7 @@ class SingleAnnotatorTask(BaseTask):
 
     @property
     def allow_starter_zip_dl(self):
-        return self.current_step in (self.Steps.AWAITING_START, self.Steps.IN_PROGRESS)
+        return self.current_step in (self.Steps.PENDING, self.Steps.IN_PROGRESS)
 
     def current_instructions(self, user: 'Annotator') -> str:
         return self.INITIAL_TEMPLATE_INSTRUCTIONS
@@ -396,7 +396,7 @@ class DoubleAnnotatorTask(BaseTask):
     merged_times_tg = StringField()
 
     class Steps(Enum):
-        AWAITING_START = 0
+        PENDING = 0
         PARALLEL = 1
         TIERS_AGREEMENT = 2
         MERGING_ANNOTS = 3
@@ -404,7 +404,7 @@ class DoubleAnnotatorTask(BaseTask):
         DONE = 5
 
     steps_names = {
-        Steps.AWAITING_START: "Awaiting start",
+        Steps.PENDING: "Pending",
         Steps.PARALLEL: "Parallel Annotations",
         Steps.TIERS_AGREEMENT: "Agreement on tiers",
         Steps.MERGING_ANNOTS: "Merging annotations",
@@ -447,7 +447,7 @@ class DoubleAnnotatorTask(BaseTask):
     @property
     def current_step(self) -> Steps:
         if not self.has_started:
-            return self.Steps.AWAITING_START
+            return self.Steps.PENDING
 
         if self.is_done:
             return self.Steps.DONE
