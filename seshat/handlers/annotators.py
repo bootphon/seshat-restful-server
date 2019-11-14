@@ -110,4 +110,4 @@ class ListAnnotatorsHandler(AdminMethodView):
     @annotators_blp.response(AnnotatorProfile(many=True))
     def get(self):
         """Lists all annotators registered in DB"""
-        return [user.short_profile for user in Annotator.objects]
+        return [user.profile for user in Annotator.objects]

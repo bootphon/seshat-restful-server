@@ -118,31 +118,31 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 @tasks_blp.route("/submit/<task_id>")
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
-    @tasks_blp.arguments(TaskTextgridSubmission)
+    @tasks_blp.arguments(TaskTextgridSubmission, as_kwargs=True)
     @tasks_blp.response(TextGridErrors)
-    def post(self, args, task_id: str):
+    def post(self, task_id: str, textgrid_str: str):
         """Textgrid submission handler"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
             return abort(403, message="Task is locked")
         error_log.flush()
-        task.submit_textgrid(args["textgrid_str"], self.user)
+        task.submit_textgrid(textgrid_str, self.user)
         return error_log.to_errors_summary()
 
 
 @tasks_blp.route("/validate/<task_id>")
 class ValidateTaskFileHandler(AnnotatorMethodView):
 
-    @tasks_blp.arguments(TaskTextgridSubmission)
+    @tasks_blp.arguments(TaskTextgridSubmission, as_kwargs=True)
     @tasks_blp.response(TextGridErrors)
-    def post(self, task_id: str, args):
+    def post(self, task_id: str, textgrid_str: str):
         """Submits a textgrid to a task. The task will figure out by itself
         the current step it's supposed to belong to, and return any validation error"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
             return abort(403, message="Task is locked")
         error_log.flush()
-        task.validate_textgrid(args["textgrid_str"], self.user)
+        task.validate_textgrid(textgrid_str, self.user)
         return error_log.to_errors_summary()
 
 

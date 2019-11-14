@@ -2,6 +2,7 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from marshmallow import Schema, fields
 from mongoengine import Q
+from seshat.models import Annotator
 
 from seshat.schemas.users import UserShortProfile, NotificationsCount
 from ..models import User
@@ -30,6 +31,10 @@ class LoginHandler(MethodView):
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
         if user is None:
             return abort(401, message="Invalid login or password")
+
+        if isinstance(user, Annotator):
+            if user.locked:
+                return abort(401, "You cannot login because your account has been locked.")
 
         if user.check_password(args["password"]):
             return {"token": user.get_token()}
