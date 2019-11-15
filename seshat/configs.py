@@ -1,3 +1,6 @@
+import os
+from mongoengine import connect
+
 class BaseConfig:
     SUPPORTED_AUDIO_EXTENSIONS = ["wav", "mp3", "ogg", "flac"]
     SMTP_SERVER_PORT = 587
@@ -12,6 +15,11 @@ class BaseConfig:
     CAMPAIGNS_FILES_ROOT = "data/"
 
     LOGS_FOLDER = "logs/"
+
+    MONGODB_SETTINGS = {
+        'db': 'seshat_api_dev',
+        'host': '127.0.0.1',
+        'port': 27017}
 
 
 class DebugConfig(BaseConfig):
@@ -60,3 +68,22 @@ class DockerComposeConfig(BaseConfig):
         'db': 'seshat_api_prod',
         'host': 'mongo',
         'port': 27017}
+
+config_mapping = {
+    "prod": ProductionConfig,
+    "docker": DockerComposeConfig,
+    "dev": DebugConfig
+}
+
+
+def get_config():
+    """Returns the right config, depending on the set FLASK_CONFIG environment variable.
+    Falls back to ProductionConfig if none is found"""
+    return config_mapping.get(os.environ.get("FLASK_CONFIG"), ProductionConfig)
+
+
+def set_up_db(config: BaseConfig):
+    """Setting up the database based on a config object"""
+    connect(config.MONGODB_SETTINGS["db"],
+            host=config.MONGODB_SETTINGS["host"],
+            port=config.MONGODB_SETTINGS["port"])
