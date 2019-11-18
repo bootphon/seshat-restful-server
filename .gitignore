@@ -1,4 +1,4 @@
-data/
+corpora/*
 .ideal/
 error.log
 credentials.json

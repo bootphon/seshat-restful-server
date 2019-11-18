@@ -46,7 +46,7 @@ class Campaign(Document):
     last_update = DateTimeField(default=datetime.now)
     wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
-    # either the CSV or the data folder
+    # either the CSV or the corpus folder
     corpus_path = StringField(required=True)
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
@@ -81,7 +81,7 @@ class Campaign(Document):
         elif corpus_path.is_file() and corpus_path.suffix == ".csv":
             return "csv"
         else:
-            logging.warning("Corpus %s isn't csv file or data folder" % str(corpus_path))
+            logging.warning("Corpus %s isn't csv file or corpora folder" % str(corpus_path))
 
     @property
     @lru_cache(maxsize=1024) # TODO : maybe tweak this caching value?
@@ -103,7 +103,7 @@ class Campaign(Document):
             with open(str(self.real_corpus_path), "r") as csv_data_file:
                 reader = DictReader(csv_data_file)
                 if not set(reader.fieldnames) == {"filename", "duration"}:
-                    raise ValueError("The CSV data file doesn't have the right headers (filename and duration)")
+                    raise ValueError("The CSV corpora file doesn't have the right headers (filename and duration)")
                 return [row["filename"] for row in reader]
 
         else:  # it's an audio file tree

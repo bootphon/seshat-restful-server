@@ -35,7 +35,7 @@ def list_subdirs(path: Path):
 
 
 def list_corpus_csv(path: Path):
-    """Lists all the available CSV in the data folder, checking beforehand
+    """Lists all the available CSV in the corpora folder, checking beforehand
     that they're valid."""
     return [filepath.name
             for filepath in path.iterdir()
