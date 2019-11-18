@@ -52,9 +52,6 @@ class ProductionConfig(BaseConfig):
         'host': '127.0.0.1',
         'port': 27017}
 
-    # Audio campaign files folder
-    CAMPAIGNS_FILES_ROOT = "data/"
-
 
 class DockerComposeConfig(BaseConfig):
     # Flask settings

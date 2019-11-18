@@ -1,3 +1,4 @@
+import logging
 import zipfile
 from collections import Counter
 from csv import DictReader
@@ -80,7 +81,7 @@ class Campaign(Document):
         elif corpus_path.is_file() and corpus_path.suffix == ".csv":
             return "csv"
         else:
-            raise ValueError("Corpus isn't csv file or data folder")
+            logging.warning("Corpus %s isn't csv file or data folder" % str(corpus_path))
 
     @property
     @lru_cache(maxsize=1024) # TODO : maybe tweak this caching value?
