@@ -13,3 +13,4 @@ pyjwt
 dataclasses
 blinker
 python-dateutil
+python-dotenv

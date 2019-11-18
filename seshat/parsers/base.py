@@ -23,6 +23,15 @@ class AnnotationChecker:
         raise NotImplemented()
 
 
+class BaseCustomParser(AnnotationChecker):
+    NAME = None
+    """This is the class that all custom parsers should inherit from"""
+
+    @property
+    def name(self):
+        return self.NAME if self.NAME is not None else self.__class__.__name__
+
+
 class CategoricalChecker(AnnotationChecker):
 
     def __init__(self, categories: List[str]):

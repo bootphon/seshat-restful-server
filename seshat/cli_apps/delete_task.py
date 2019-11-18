@@ -1,10 +1,6 @@
-import argparse
+from seshat.configs import set_up_db
+from .commons import argparser
 
-from mongoengine import connect, NotUniqueError
-
-from seshat.models.users import Admin, Annotator
-
-argparser = argparse.ArgumentParser()
 argparser.add_argument("-y", "--confirm", action="store_true",
                        help="Do not ask for confirmation before deleting tasks")
 group = argparser.add_mutually_exclusive_group()
@@ -17,18 +13,9 @@ query_group.add_argument("--filename", type=str, nargs="+", help="Filenames asso
 
 def main():
     args = argparser.parse_args()
-    connect(args.db)
-    pass_hash, salt = Annotator.create_password_hash(args.password)
-    new_user = Admin(username=args.username,
-                     first_name=args.first_name,
-                     last_name=args.last_name,
-                     email=args.email,
-                     salted_password_hash=pass_hash,
-                     salt=salt)
-    try:
-        new_user.save()
-    except NotUniqueError:
-        print("Error: username or email are not unique")
+    set_up_db(args.config)
+
+    # TODO
 
 
 if __name__ == "__main__":

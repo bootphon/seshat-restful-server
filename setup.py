@@ -37,7 +37,7 @@ setup(
             'add-manager = seshat.cli_apps.add_manager:main',
             'change-password = seshat.cli_apps.check_password:main',
             'check-parser = seshat.cli_apps.check_parser:main',
-            'check-dataset = seshat.cli_apps.check_dataset:main',
+            'check-corpus = seshat.cli_apps.check_corpus:main',
             'create-annotator = seshat.cli_apps.create_annotator:main',
             'delete-annotator = seshat.cli_apps.delete_annotator:main',
             'campaign-gamma = seshat.cli_apps.campaign_gamma:main',

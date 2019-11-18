@@ -1,35 +1,24 @@
-import argparse
+from mongoengine import DoesNotExist
 
-from mongoengine import connect, NotUniqueError
+from seshat.configs import set_up_db
+from .commons import argparser
 
-from seshat.models.users import Admin, Annotator
+from seshat.models import Campaign
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("username", type=str, help="Username of created user")
-argparser.add_argument("password", type=str, help="Password of created user")
-argparser.add_argument("email", type=str, help="Email of created user")
-argparser.add_argument("--first_name", default="John",
-                       type=str, help="First name of new user")
-argparser.add_argument("--last_name", default="Cleese",
-                       type=str, help="Last name of new user")
-argparser.add_argument("--db", default="seshat_api_prod", type=str,
-                       help="db name or address")
+argparser.add_argument("campaign_slug", type=str, help="Slug for which you want to retrieve the gamma summary")
+argparser.add_argument("--csv", type=str, help="Csv output file")
 
 
 def main():
     args = argparser.parse_args()
-    connect(args.db)
-    pass_hash, salt = Annotator.create_password_hash(args.password)
-    new_user = Admin(username=args.username,
-                     first_name=args.first_name,
-                     last_name=args.last_name,
-                     email=args.email,
-                     salted_password_hash=pass_hash,
-                     salt=salt)
+    set_up_db(args.config)
+
     try:
-        new_user.save()
-    except NotUniqueError:
-        print("Error: username or email are not unique")
+        campaigns: Campaign = Campaign.objects.get(slug=args.campaign_slug)
+    except DoesNotExist:
+        ValueError("Cannot find campaign with slug %s" % args.campaign_slug)
+
+    # TODO
 
 
 if __name__ == "__main__":

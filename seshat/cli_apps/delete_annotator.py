@@ -1,26 +1,25 @@
-import argparse
+import logging
 
-from mongoengine import connect, NotUniqueError
+from mongoengine import NotUniqueError, DoesNotExist
 
+from seshat.configs import set_up_db
 from seshat.models.users import Admin, Annotator
+from .commons import argparser
 
-argparser = argparse.ArgumentParser()
 argparser.add_argument("username", type=str, help="Username of created user")
+
 
 def main():
     args = argparser.parse_args()
-    connect(args.db)
-    pass_hash, salt = Annotator.create_password_hash(args.password)
-    new_user = Admin(username=args.username,
-                     first_name=args.first_name,
-                     last_name=args.last_name,
-                     email=args.email,
-                     salted_password_hash=pass_hash,
-                     salt=salt)
+    set_up_db(args.config)
+
     try:
-        new_user.save()
-    except NotUniqueError:
-        print("Error: username or email are not unique")
+        annotator: Annotator = Annotator.objects.get(username=args.username)
+    except DoesNotExist:
+        raise ValueError("User not found")
+
+    annotator.delete()
+    logging.info("User deleted")
 
 
 if __name__ == "__main__":
