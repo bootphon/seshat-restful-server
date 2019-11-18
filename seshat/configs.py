@@ -12,7 +12,7 @@ class BaseConfig:
     OPENAPI_SWAGGER_UI_URL = 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.19.5/'
 
     # Audio campaign files folder
-    CAMPAIGNS_FILES_ROOT = "data/"
+    CAMPAIGNS_FILES_ROOT = "corpora/"
 
     LOGS_FOLDER = "logs/"
 
