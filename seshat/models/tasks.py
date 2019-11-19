@@ -410,7 +410,8 @@ class DoubleAnnotatorTask(BaseTask):
         Steps.PARALLEL: "Parallel Annotations",
         Steps.TIERS_AGREEMENT: "Agreement on tiers",
         Steps.MERGING_ANNOTS: "Merging annotations",
-        Steps.MERGING_TIMES: "Merging Times"
+        Steps.MERGING_TIMES: "Merging Times",
+        Steps.DONE: "Done"
     }
 
     INITIAL_TEMPLATE_INSTRUCTIONS = \

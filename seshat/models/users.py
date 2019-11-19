@@ -20,7 +20,7 @@ class Notification(Document):
     object_id = StringField()
 
     def to_msg(self):
-        return self.to_json()
+        return {**self.to_mongo(), "id": self.id}
 
 
 class User(Document):
