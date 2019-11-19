@@ -8,7 +8,7 @@ from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CorpusFile, CampaignWikiPageUpdate
+    CorpusFile, CampaignWikiPageUpdate, TierSpecifications
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -164,3 +164,12 @@ class CampaignSubscriptionHandler(AdminMethodView):
             if self.user in campaign.subscribers:
                 campaign.subscribers.remove(self.user)
                 campaign.save()
+
+
+@campaigns_blp.route("/checking_scheme/<campaign_slug>")
+class CampaignCheckingScheme(LoggedInMethodView):
+
+    @campaigns_blp.response(TierSpecifications(many=True))
+    def get(self, campaign_slug: str):
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        pass # TODO
