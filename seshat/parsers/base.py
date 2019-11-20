@@ -1,14 +1,4 @@
-from typing import Dict, List
-
-
-def parser_factory(parser_name: str):
-    """Uses the importlib to load parser using its name"""
-    pass
-
-
-def get_parser_list() -> Dict[int, str]:
-    """Returns a dictionary matching parser id to its defined name"""
-    pass
+from typing import List
 
 
 class AnnotationError(Exception):
@@ -35,7 +25,8 @@ class BaseCustomParser(AnnotationChecker):
 class CategoricalChecker(AnnotationChecker):
 
     def __init__(self, categories: List[str]):
-        self.categories = categories
+        self.categories = set(categories)
 
     def check_annotation(self, annot: str):
-        pass
+        if annot.strip() not in self.categories:
+            raise AnnotationError(f"Annotation {annot} not valid: has to be one of {', '.join(self.categories)}")
