@@ -124,7 +124,9 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
         """Textgrid submission handler"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
-            return abort(403, message="Task is locked")
+            return abort(403, message="Task is locked.")
+        if not task.allow_file_upload(self.user):
+            return abort(403, message="Cannot upload file for this task, at this step.")
         error_log.flush()
         task.submit_textgrid(textgrid_str, self.user)
         return error_log.to_errors_summary()
@@ -141,6 +143,8 @@ class ValidateTaskFileHandler(AnnotatorMethodView):
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if task.is_locked:
             return abort(403, message="Task is locked")
+        if not task.allow_file_upload(self.user):
+            return abort(403, message="Cannot upload file for this task, at this step.")
         error_log.flush()
         task.validate_textgrid(textgrid_str, self.user)
         return error_log.to_errors_summary()

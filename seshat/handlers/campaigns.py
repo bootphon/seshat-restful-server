@@ -8,7 +8,7 @@ from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CorpusFile, CampaignWikiPageUpdate, TierSpecifications
+    CorpusFile, CampaignWikiPageUpdate, TierSpecifications, CheckingSchemeSummary
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -169,7 +169,10 @@ class CampaignSubscriptionHandler(AdminMethodView):
 @campaigns_blp.route("/checking_scheme/<campaign_slug>")
 class CampaignCheckingScheme(LoggedInMethodView):
 
-    @campaigns_blp.response(TierSpecifications(many=True))
+    @campaigns_blp.response(CheckingSchemeSummary, code=200)
     def get(self, campaign_slug: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        pass # TODO
+        if campaign.check_textgrids:
+            return campaign.checking_scheme.summary
+        else:
+            return # nothing is returned

@@ -127,6 +127,7 @@ class Annotator(User):
         return {
             **super().short_profile,
             "last_activity": self.last_activity,
+            "assigned_tasks": len(self.assigned_tasks),
             "active_tasks": len([task for task in self.assigned_tasks if not task.is_done]),
             "finished_tasks": len([task for task in self.assigned_tasks if task.is_done]),
             "creation_date": self.creation_time.date(),

@@ -206,6 +206,7 @@ class Campaign(Document):
         return {
             "slug": self.slug,
             "name": self.name,
+            "description": self.description,
             "creator": self.creator.short_profile,
             # TODO use the stats object when it's completed and rightly updated
             "stats": {

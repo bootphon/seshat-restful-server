@@ -63,10 +63,11 @@ class ManageAnnotatorHandler(AdminMethodView):
 class AnnotatorChangePasswordHandler(AdminMethodView):
 
     @annotators_blp.arguments(AnnotatorPasswordChange, as_kwargs=True)
+    @annotators_blp.response(code=200)
     def post(self, username: str, password: str):
         if len(password) < 8:
             abort(403, message="Password has to be longer")
-        annotator: Annotator = Annotator.objects.get(username)
+        annotator: Annotator = Annotator.objects.get(username=username)
         pass_hash, salt = Annotator.create_password_hash(password)
         annotator.salted_password_hash = pass_hash
         annotator.salt = salt

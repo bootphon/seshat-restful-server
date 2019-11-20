@@ -19,7 +19,6 @@ class CorporaListing(Schema):
 
 class TierSpecifications(Schema):
     """Tier checking's specifications"""
-    validate_tier = fields.Bool(required=True)
     required = fields.Bool(required=True)
     allow_empty = fields.Bool(default=True)
     name = fields.Str(required=True)
@@ -76,6 +75,7 @@ class CampaignShortProfile(Schema):
 class CampaignStatus(Schema):
     slug = fields.Str(required=True)
     name = fields.Str(required=True)
+    description = fields.Str(required=True)
     creator = fields.Nested(UserShortProfile, required=True)
     stats = fields.Nested(CampaignStats)
     corpus_path = fields.Str(required=True)
@@ -100,3 +100,9 @@ class CampaignSubscriptionUpdate(Schema):
     slug = fields.Str(required=True)
     # true is subscribe, false is unsubscribe
     subscription_status = fields.Bool(required=True)
+
+
+class CheckingSchemeSummary(Schema):
+    id = fields.Str(required=True)
+    name = fields.Str(required=True)
+    tier_specs = fields.List(fields.Nested(TierSpecifications))

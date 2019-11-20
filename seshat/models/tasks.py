@@ -126,8 +126,7 @@ class BaseTask(Document):
     def allow_starter_zip_dl(self) -> bool:
         raise NotImplemented()
 
-    @property
-    def allow_file_upload(self) -> bool:
+    def allow_file_upload(self, annotator: 'Annotator') -> bool:
         raise NotImplemented()
 
     def current_instructions(self, user: 'Annotator') -> str:
@@ -215,7 +214,7 @@ class BaseTask(Document):
             "current_step_idx": self.current_step.value,
             "current_instructions": self.current_instructions(annotator),
             "allow_starter_dl": self.allow_starter_zip_dl,
-            "allow_file_upload": self.allow_file_upload,
+            "allow_file_upload": self.allow_file_upload(annotator),
         }
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
@@ -299,8 +298,7 @@ class SingleAnnotatorTask(BaseTask):
     def annotators(self):
         return [self.annotator]
 
-    @property
-    def allow_file_upload(self) -> bool:
+    def allow_file_upload(self, annotator: 'Annotator') -> bool:
         return True
 
     @property
@@ -523,6 +521,17 @@ class DoubleAnnotatorTask(BaseTask):
             "merged_times": self.merged_times_tg,
             "final": self.final_tg
         }
+
+    @property
+    def allow_starter_zip_dl(self) -> bool:
+        return self.current_step in (self.Steps.PARALLEL, self.Steps.PENDING, self.Steps.TIERS_AGREEMENT)
+
+    def allow_file_upload(self, annotator: 'Annotator') -> bool:
+        if annotator == self.reference:
+            return True
+        elif annotator == self.target:
+            return self.current_step in (self.Steps.PENDING, self.Steps.PARALLEL, self.Steps.TIERS_AGREEMENT)
+
 
     def current_tg_template(self, user: 'Annotator') -> str:
         if self.merged_tg is None:

@@ -29,11 +29,21 @@ class TierScheme(EmbeddedDocument):
             except AnnotationError as e:
                 error_log.log_annot(tier.name, i, annot, str(e))
 
+    def to_specs(self):
+        return {
+            "name": self.name,
+            "required": self.required,
+            "allow_empty": self.allow_empty,
+        }
+
 
 class UnCheckedTier(TierScheme):
 
     def check_tier(self, tier: IntervalTier):
         pass
+
+    def to_specs(self):
+        return {**super().to_specs(), "content_type": "NONE"}
 
 
 class CategoricalTier(TierScheme):
@@ -43,6 +53,9 @@ class CategoricalTier(TierScheme):
         super().__init__(*args, **kwargs)
         self.parser = CategoricalChecker(self.categories)
 
+    def to_specs(self):
+        return {**super().to_specs(), "content_type": "CATEGORICAL", "categories": self.categories}
+
 
 class ParsedTier(TierScheme):
     parser_name = StringField(required=True)
@@ -50,6 +63,9 @@ class ParsedTier(TierScheme):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parser = parser_factory(self.parser_name)
+
+    def to_specs(self):
+        return {**super().to_specs(), "content_type": "PARSED", "parser_name": self.parser_name}
 
 
 class TextGridCheckingScheme(Document):
@@ -66,24 +82,21 @@ class TextGridCheckingScheme(Document):
     def from_tierspecs_schema(cls, scheme_data: List, scheme_name: str):
         new_scheme = cls(name=scheme_name)
         for tier_specs in scheme_data:
-            if tier_specs["validate_tier"]:
-                new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
-                                                required=tier_specs["required"])
-            else:
-                if tier_specs.get("content_type") == "CATEGORIES":
-                    new_tier_scheme = CategoricalTier(name=tier_specs["name"],
-                                                      required=tier_specs["required"],
-                                                      allow_empty=tier_specs["allow_empty"],
-                                                      categories=tier_specs["categories"])
-                elif tier_specs.get("content_type") == "PARSED":
-                    new_tier_scheme = ParsedTier(name=tier_specs["name"],
-                                                 required=tier_specs["required"],
-                                                 allow_empty=tier_specs["allow_empty"],
-                                                 parser_name=tier_specs["parser_name"])
+            if tier_specs.get("content_type") == "CATEGORIES":
+                new_tier_scheme = CategoricalTier(name=tier_specs["name"],
+                                                  required=tier_specs["required"],
+                                                  allow_empty=tier_specs["allow_empty"],
+                                                  categories=tier_specs["categories"])
+            elif tier_specs.get("content_type") == "PARSED":
+                new_tier_scheme = ParsedTier(name=tier_specs["name"],
+                                             required=tier_specs["required"],
+                                             allow_empty=tier_specs["allow_empty"],
+                                             parser_name=tier_specs["parser_name"])
 
-                else:
-                    new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
-                                                    required=tier_specs["required"])
+            else:
+                new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
+                                                allow_empty=tier_specs["allow_empty"],
+                                                required=tier_specs["required"])
             new_scheme.tiers_specs[tier_specs["name"]] = new_tier_scheme
         return new_scheme
 
@@ -106,4 +119,12 @@ class TextGridCheckingScheme(Document):
             new_tier = IntervalTier(name=tier_name, minTime=0.0, maxTime=duration)
             new_tg.append(new_tier)
 
-        return new_tier
+        return new_tg
+
+    @property
+    def summary(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "tier_specs": [tier.to_specs() for tier in self.tiers_specs.values()]
+        }
