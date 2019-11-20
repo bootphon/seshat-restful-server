@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 
 setup(
-    name='seshat',
+    name='seshat-server',
     version='0.1.0',
     description='A self-hosted tool to manage and ensure quality of audio annotations',
     long_description=long_description,
