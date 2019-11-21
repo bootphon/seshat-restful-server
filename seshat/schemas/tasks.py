@@ -83,6 +83,15 @@ class TimeMergeError(Schema):
     threshold = fields.Float(required=True)
 
 
+class DoubleAnnotatorData(Schema):
+    from .users import UserShortProfile
+    reference = fields.Nested(UserShortProfile, required=True)
+    target = fields.Nested(UserShortProfile, required=True)
+    current_user_role = fields.Str(required=True)
+    #  This field is optional because it's only filled in a double annotator task
+    frontiers_merge_table = fields.List(fields.Nested(TimeMergeError))
+
+
 class TaskFullStatusAnnotator(TaskShortStatus):
     """Task status for the annotator task view"""
     all_steps = fields.List(fields.Str())
@@ -90,8 +99,7 @@ class TaskFullStatusAnnotator(TaskShortStatus):
     current_instructions = fields.Str(required=True)
     allow_starter_dl = fields.Bool(required=True)
     allow_file_upload = fields.Bool(required=True)
-    #  This field is optional because it's only filled in a double annotator task
-    frontiers_merge_table = fields.List(fields.Nested(TimeMergeError))
+    double_annot_data = fields.Nested(DoubleAnnotatorData)
 
 
 class TaskCommentSubmission(Schema):

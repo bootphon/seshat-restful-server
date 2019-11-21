@@ -553,12 +553,17 @@ class DoubleAnnotatorTask(BaseTask):
             return "final"
 
     def get_annotator_status(self, annotator: 'Annotator'):
+        double_annot_data = {
+            "reference": self.reference.short_profile,
+            "target": self.target.short_profile,
+            "current_user_role": 'reference' if annotator == self.reference else 'target'
+        }
+
         if self.current_step == self.Steps.MERGING_TIMES:
-            return {**super().get_annotator_status(annotator),
-                    "frontiers_merge_table": [error.to_msg() for error
-                                              in self.times_conflicts.to_merge_conflicts_errors()]}
-        else:
-            return super().get_annotator_status(annotator)
+            double_annot_data["frontiers_merge_table"] = [error.to_msg() for error
+                                                          in self.times_conflicts.to_merge_conflicts_errors()]
+
+        return {**super().get_annotator_status(annotator), "double_annot_data": double_annot_data}
 
     def process_ref(self, textgrid: str):
         """Handles the submission of a textgrid sent by the reference annotator"""
