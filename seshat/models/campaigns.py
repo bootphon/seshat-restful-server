@@ -175,7 +175,7 @@ class Campaign(Document):
             tg = TextGrid(name=filename, maxTime=file_duration)
         else:
             tg = self.checking_scheme.gen_template_tg(file_duration, filename)
-        return SingleAnnotatorTextGrid.from_textgrid_obj(tg, [self.creator], None)
+        return SingleAnnotatorTextGrid.from_textgrid(tg, [self.creator], None, self.checking_scheme)
 
     def get_full_annots_archive(self):
         buffer = BytesIO()

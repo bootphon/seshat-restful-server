@@ -145,7 +145,7 @@ class BaseTask(Document):
                                     minTime=0.0,
                                     maxTime=duration)
             new_tg.append(new_tier)
-        self.template_tg = SingleAnnotatorTextGrid.from_textgrid_obj(new_tg, [], self)
+        self.template_tg = SingleAnnotatorTextGrid.from_textgrid(new_tg, [], self)
 
     def get_starter_zip(self) -> bytes:
         buffer = BytesIO()
@@ -325,7 +325,7 @@ class SingleAnnotatorTask(BaseTask):
         if self.is_locked:
             return
 
-        tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+        tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
         tg.check()
         if not error_log.has_errors:
             self.final_tg = tg
@@ -341,7 +341,7 @@ class SingleAnnotatorTask(BaseTask):
             return
 
         error_log.flush()
-        tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.annotator], self)
+        tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.annotator], self)
 
         tg.check()
         self._log_upload(textgrid, annotator, not error_log.has_errors)
@@ -569,7 +569,7 @@ class DoubleAnnotatorTask(BaseTask):
         """Handles the submission of a textgrid sent by the reference annotator"""
         if self.merged_tg is None:
             # it's a completed textgrid
-            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.reference], self)
             tg.check()
             if not error_log.has_errors:
                 self.ref_tg = tg
@@ -581,7 +581,7 @@ class DoubleAnnotatorTask(BaseTask):
                         self.notify_merged_ready(self.target)
 
         elif self.merged_tg is None and self.target_tg is not None:
-            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.reference], self)
             tg.check()
             if not error_log.has_errors:
                 self.ref_tg = tg
@@ -593,21 +593,21 @@ class DoubleAnnotatorTask(BaseTask):
 
         elif self.merged_annots_tg is None:
             # processing the merged annots textgrid
-            tg = MergedAnnotsTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg = MergedAnnotsTextGrid.from_textgrid(textgrid, self.annotators, self)
             tg.check()
             if not error_log.has_errors:
                 self.merged_annots_tg = tg
                 merged_times_tg, self.times_conflicts = tg.gen_merged_times()
-                self.merged_times_tg = MergedTimesTextGrid.from_textgrid_obj(merged_times_tg,
+                self.merged_times_tg = MergedTimesTextGrid.from_textgrid(merged_times_tg,
                                                                              self.annotators,
                                                                              self)
 
         else:
-            tg = MergedTimesTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg = MergedTimesTextGrid.from_textgrid(textgrid, self.annotators, self)
             tg.check()
             if not error_log.has_errors:
                 final_tg, _ = tg.check_times_merging()
-                self.final_tg = SingleAnnotatorTextGrid.from_textgrid_obj(final_tg, self.annotators, self)
+                self.final_tg = SingleAnnotatorTextGrid.from_textgrid(final_tg, self.annotators, self)
                 self.is_done = True
                 self.finish_time = datetime.now()
                 self.notify_done()
@@ -616,7 +616,7 @@ class DoubleAnnotatorTask(BaseTask):
         """Handles the submission of a textgrid sent by the target annotator"""
         if self.merged_tg is None:
             # it's a completed textgrid
-            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
             tg.check()
             if not error_log.has_errors:
                 self.target_tg = tg
@@ -628,7 +628,7 @@ class DoubleAnnotatorTask(BaseTask):
                         self.notify_merged_ready(self.reference)
 
         elif self.merged_tg is None and self.reference is not None:
-            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.target_tg], self)
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.target_tg], self)
             tg.check()
             if not error_log.has_errors:
                 self.ref_tg = tg
@@ -660,21 +660,21 @@ class DoubleAnnotatorTask(BaseTask):
         if annotator == self.reference:
             if self.merged_tg is None:
                 # it's a completed textgrid
-                tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.reference], self)
+                tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.reference], self)
 
             elif self.merged_annots_tg is None:
                 # processing the merged annots textgrid
-                tg = MergedAnnotsTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+                tg = MergedAnnotsTextGrid.from_textgrid(textgrid, self.annotators, self)
 
             elif self.merged_times_tg is not None and self.final_tg is None:
                 # the times haven't been merged yet
-                tg = MergedTimesTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+                tg = MergedTimesTextGrid.from_textgrid(textgrid, self.annotators, self)
             else:
                 # it's the final textgrid
-                tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, self.annotators, self)
+                tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
         elif annotator == self.target:
             # only one possible textgrid to validate
-            tg = SingleAnnotatorTextGrid.from_textgrid_str(textgrid, [self.target_tg], self)
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.target_tg], self)
         else:
             return
 

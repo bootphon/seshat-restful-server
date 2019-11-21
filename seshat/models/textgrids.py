@@ -3,7 +3,7 @@ from collections import Counter
 from copy import deepcopy
 from datetime import datetime
 from statistics import mean
-from typing import Tuple
+from typing import Tuple, Set
 from typing import Union, List
 
 from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField, BooleanField
@@ -28,14 +28,17 @@ class BaseTextGridDocument(Document):
         self._textgrid_obj: TextGrid = None
 
     @classmethod
-    def from_textgrid_obj(cls, tg: TextGrid, creators: List['Annotator'], task: 'BaseTask'):
-        return cls.from_textgrid_str(tg_to_str(tg), creators, task)
-
-    @classmethod
-    def from_textgrid_str(cls, tg_str: str, creators: List['Annotator'], task: 'BaseTask'):
-        return cls(textgrid_file=tg_str.encode(encoding="utf8"),
-                   task=task,
-                   creators=creators)
+    def from_textgrid(cls, tg: Union[TextGrid,str],
+                      creators: List['Annotator'],
+                      task: 'BaseTask'):
+        if isinstance(tg, TextGrid):
+            tg_file = tg_to_str(tg).encode(encoding='utf-8')
+        elif isinstance(tg, str):
+            tg_file = tg.encode('utf-8')
+        else:
+            raise TypeError("Unsupported textgrid object type %s")
+        return cls(textgrid_file=tg_file, task=task, creators=creators,
+                   checking_scheme=task.campaign.checking_scheme)
 
     @property
     def textgrid(self):
@@ -75,14 +78,15 @@ class LoggedTextGrid(BaseTextGridDocument):
 
 class SingleAnnotatorTextGrid(BaseTextGridDocument):
 
-    def check_structure(self):
-        tier_names = set(self.textgrid.getNames())
-
+    def check_duplicate_tiers(self):
         # checking for any tier duplicate
         names_counter = Counter(self.textgrid.getNames())
         for tier_name, count in names_counter.items():
             if count > 1:
                 error_log.log_structural("Duplicate tier name:  %s" % tier_name)
+
+    def check_scheme_tiers(self):
+        tg_tier_names = set(self.textgrid.getNames())
 
         # checking that required tiers are all here
         required_tiers = set(self.checking_scheme.required_tiers_names)
@@ -91,11 +95,11 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
             error_log.structural("The tiers %s are missing in the TextGrid file" % " ,".join(missing_tiers))
 
         # removing all tiers that are referenced in the scheme
-        tier_names -= set(self.checking_scheme.all_tiers_names)
+        tg_tier_names -= set(self.checking_scheme.all_tiers_names)
 
         # remaining tiers are invalid
-        if tier_names:
-            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % " ,".join(tier_names))
+        if tg_tier_names:
+            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % " ,".join(tg_tier_names))
 
     def check_annotations(self):
         valid_tiers = set(self.checking_scheme.all_tiers_names) & set(self.textgrid.getNames())
@@ -104,8 +108,10 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
             tier_scheme.check_tier(self.textgrid.getFirst(tier_name))
 
     def check(self):
-        self.check_structure()
-        self.check_annotations()
+        self.check_duplicate_tiers()
+        if self.checking_scheme:
+            self.check_scheme_tiers()
+            self.check_annotations()
 
 
 class DoubleAnnotatorTextGrid(SingleAnnotatorTextGrid):
@@ -167,17 +173,25 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             target_tier.name = tier_name + "-target"
             merged_tg.append(ref_tier)
             merged_tg.append(target_tier)
-        new_doc = cls.from_textgrid_obj(merged_tg, ref_tg.creators + target_tg.creators, ref_tg.task)
+        new_doc = cls.from_textgrid(merged_tg, ref_tg.creators + target_tg.creators, ref_tg.task)
         return new_doc
 
-    def check_structure(self):
-        tier_names_set = set(self.textgrid.getNames())
+    @property
+    def suffixed_tier_names(self) -> Set[str]:
+        names = set()
+        for suffix in (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX):
+            for name in set(self.checking_scheme.all_tiers_names):
+                names.add(name + suffix)
+        return names
 
-        # checking for any tier duplicate
-        names_counter = Counter(self.textgrid.getNames())
-        for tier_name, count in names_counter.items():
-            if count > 1:
-                error_log.log_structural("Nom de tier dupliqué:  %s" % tier_name)
+    def check_tiers_matching(self):
+        """Checks that all tiers match either suffixes, and that tier radicals are found
+        twice (one for top TOP_GROUP_SUFFIX, one for BOTTOM_GROUP_SUFFIX)"""
+        pass
+
+    def check_scheme_tiers(self):
+        """Checks that the tier radicals against the """
+        tier_names_set: Set[str] = set(self.textgrid.getNames())
 
         # checking that required tiers are all there for both suffixes
         for suffix in (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX):
@@ -187,7 +201,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
                 error_log.structural("The tiers %s are missing" % " ,".join(missing_tiers))
             tier_names_set -= req_tiers_suffixed
 
-        # in remaining tier names, eliminate those that are FA or MA
+        # filtering out valid tiers to weed out potential invalid tiers names
         tier_names = set(self.textgrid.getNames())
         all_tiers_suffixed = set(name + suffix for name in set(self.checking_scheme.all_tiers_names))
         tier_names -= all_tiers_suffixed
@@ -305,9 +319,24 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
 
         return new_tg, merge_results
 
+    def check_annotations(self):
+        # getting only validated tiers
+        validated_tiers = set(self.checking_scheme.all_tiers_names)
+        for tier_name in self.textgrid.getNames():
+            # removing suffix from tier, and if that radical isn't defined in the scheme, ignore it
+            no_suffix_name = re.sub("(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX),
+                                    "", tier_name)
+            if no_suffix_name not in validated_tiers:
+                continue
+            tier_scheme = self.checking_scheme.get_tier_scheme(no_suffix_name)
+            tier_scheme.check_tier(self.textgrid.getFirst(tier_name))
+
     def check(self):
-        self.check_structure()
-        self.check_annotations()
+        self.check_duplicate_tiers()
+        self.check_tiers_matching()
+        if self.checking_scheme:
+            self.check_scheme_tiers()
+            self.check_annotations()
         self.check_annotations_matching()
 
 
@@ -316,7 +345,11 @@ class MergedTimesTextGrid(MergedAnnotsTextGrid):
     BOTTOM_GROUP_SUFFIX = "-target"
 
     def check(self):
-        self.check_structure()
-        self.check_annotations()
+        self.check_duplicate_tiers()
+        self.check_tiers_matching()
+        if self.checking_scheme:
+            self.check_scheme_tiers()
+            self.check_annotations()
         self.check_annotations_matching()
         self.check_times_merging()
+
