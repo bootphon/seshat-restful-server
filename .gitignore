@@ -1,4 +1,6 @@
 corpora/*
+# exception for the gitkeep thing
+!corpora/.gitkeep
 .ideal/
 error.log
 credentials.json
