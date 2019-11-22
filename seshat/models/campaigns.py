@@ -99,8 +99,8 @@ class Campaign(Document):
         try:
             return float(ffmpeg.probe(str(filepath))["format"]["duration"])
         except ffmpeg.Error as err:
-            print("FFProbe error: " + err.stderr)
-            raise ffmpeg.Error
+            print("FFProbe error: " + err.stderr.decode('utf-8'))
+            raise err
 
     def populate_audio_files(self):
         if self.corpus_type == "csv":
