@@ -98,8 +98,8 @@ class Campaign(Document):
             filepath = Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(filename)
         try:
             return float(ffmpeg.probe(str(filepath))["format"]["duration"])
-        except ffmpeg.Error:
-            print("FFProbe error: " + ffmpeg.Error.stderr)
+        except ffmpeg.Error as err:
+            print("FFProbe error: " + err.stderr)
             raise ffmpeg.Error
 
     def populate_audio_files(self):
