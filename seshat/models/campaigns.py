@@ -96,7 +96,11 @@ class Campaign(Document):
             return self.csv_table[filename]
         else:
             filepath = Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(filename)
+        try:
             return float(ffmpeg.probe(str(filepath))["format"]["duration"])
+        except ffmpeg.Error:
+            print("FFProbe error: " + ffmpeg.Error.stderr)
+            raise ffmpeg.Error
 
     def populate_audio_files(self):
         if self.corpus_type == "csv":

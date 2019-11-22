@@ -135,18 +135,6 @@ class BaseTask(Document):
     def current_tg_template(self, user: 'Annotator') -> str:
         raise NotImplemented()
 
-    def create_task_template(self, data_file: str):
-        duration = float(ffmpeg.probe(data_file)["format"]["duration"])
-        new_tg = TextGrid(name=data_file,
-                          minTime=0.0,
-                          maxTime=duration)
-        for tier_name in self.campaign.checking_scheme.all_tier_names:
-            new_tier = IntervalTier(name=tier_name,
-                                    minTime=0.0,
-                                    maxTime=duration)
-            new_tg.append(new_tier)
-        self.template_tg = SingleAnnotatorTextGrid.from_textgrid(new_tg, [], self)
-
     def get_starter_zip(self) -> bytes:
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
