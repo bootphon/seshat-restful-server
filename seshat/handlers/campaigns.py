@@ -7,8 +7,9 @@ from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
+from seshat.parsers import list_parsers
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CorpusFile, CampaignWikiPageUpdate, TierSpecifications, CheckingSchemeSummary
+    CorpusFile, CampaignWikiPageUpdate, TierSpecifications, CheckingSchemeSummary, ParsersList
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -28,6 +29,14 @@ class AvailableCorporaHandler(AdminMethodView):
         """Get a list of available folder and CSV corpora"""
         return {"folders_corpora": list_subdirs(Path(current_app.config["CAMPAIGNS_FILES_ROOT"])),
                 "csv_corpora": list_corpus_csv(Path(current_app.config["CAMPAIGNS_FILES_ROOT"]))}
+
+
+@campaigns_blp.route("parsers/list/")
+class AvailableParsersHandler(AdminMethodView):
+
+    @campaigns_blp.response(ParsersList)
+    def get(self):
+        return {"parser_names": list(list_parsers().keys())}
 
 
 @campaigns_blp.route("admin/")

@@ -17,6 +17,10 @@ class CorporaListing(Schema):
     csv_corpora = fields.List(fields.Str())
 
 
+class ParsersList(Schema):
+    parser_names = fields.List(fields.Str)
+
+
 class TierSpecifications(Schema):
     """Tier checking's specifications"""
     required = fields.Bool(required=True)

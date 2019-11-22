@@ -31,6 +31,10 @@ class BaseTextGridDocument(Document):
     def from_textgrid(cls, tg: Union[TextGrid,str],
                       creators: List['Annotator'],
                       task: 'BaseTask'):
+        if task is not None:
+            checking_scheme = task.campaign.checking_scheme
+        else:
+            checking_scheme = None
         if isinstance(tg, TextGrid):
             tg_file = tg_to_str(tg).encode(encoding='utf-8')
         elif isinstance(tg, str):
@@ -38,7 +42,7 @@ class BaseTextGridDocument(Document):
         else:
             raise TypeError("Unsupported textgrid object type %s")
         return cls(textgrid_file=tg_file, task=task, creators=creators,
-                   checking_scheme=task.campaign.checking_scheme)
+                   checking_scheme=checking_scheme)
 
     @property
     def textgrid(self):
