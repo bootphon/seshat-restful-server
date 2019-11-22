@@ -6,18 +6,17 @@ from datetime import datetime
 from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
-from typing import Dict
 
 import ffmpeg
 from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
-                         ValidationError, NULLIFY, signals, PULL, IntField)
+                         ValidationError, signals, PULL, IntField)
 from textgrid import TextGrid
 
-from .tasks import BaseTask
-from .textgrids import BaseTextGridDocument, SingleAnnotatorTextGrid
 from seshat.utils import percentage
+from .tasks import BaseTask
+from .textgrids import SingleAnnotatorTextGrid
 from .tg_checking import TextGridCheckingScheme
 
 
@@ -95,7 +94,7 @@ class Campaign(Document):
         if self.corpus_type == "csv":
             return self.csv_table[filename]
         else:
-            filepath = Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(filename)
+            filepath = self.real_corpus_path / Path(filename)
         try:
             return float(ffmpeg.probe(str(filepath))["format"]["duration"])
         except ffmpeg.Error as err:
@@ -114,8 +113,9 @@ class Campaign(Document):
             audio_files = []
             authorized_extensions = current_app.config["SUPPORTED_AUDIO_EXTENSIONS"]
             for filepath in self.real_corpus_path.glob("**/*"):
-                if filepath.suffix.strip(".") in authorized_extensions:
-                    audio_files.append(str(Path(*filepath.parts[1:])))
+                if filepath.suffix.strip(".").lower() not in authorized_extensions:
+                    continue
+                audio_files.append(str(Path(*filepath.parts[1:])))
             return audio_files
 
     def _tasks_for_file(self, audio_file: str):

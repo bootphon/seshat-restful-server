@@ -29,7 +29,8 @@ setup(
     ],
     keywords='',
     namespace_packages=['seshat'],
-    packages=find_packages(exclude=['docs', 'tests']),
+    packages=find_packages(exclude=['docs', 'tests', 'corpora']),
+    exclude_package_data={'': ['*.wav']},
     setup_requires=['pytest-runner', 'setuptools>=38.6.0'],  # >38.6.0 needed for markdown README.md
     tests_require=['pytest'],
     entry_points={
