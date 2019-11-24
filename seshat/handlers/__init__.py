@@ -4,3 +4,4 @@ from .campaigns import campaigns_blp
 from .downloads import downloads_blp
 from .tasks import tasks_blp
 from .annotators import annotators_blp
+from .corpora import corpora_blp

@@ -29,17 +29,8 @@ class Message:
         self.text = text
 
 
-def list_subdirs(path: Path):
-    """Lists all subdirs of a dir, whithout the root dir's path"""
-    return [f.name for f in path.iterdir() if f.is_dir()]
 
 
-def list_corpus_csv(path: Path):
-    """Lists all the available CSV in the corpora folder, checking beforehand
-    that they're valid."""
-    return [filepath.name
-            for filepath in path.iterdir()
-            if filepath.is_file() and filepath.suffix == ".csv"]
 
 
 class FixSizeOrderedDict(OrderedDict):

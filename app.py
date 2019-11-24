@@ -20,6 +20,7 @@ api = Api(app)
 # registering the RESTful API blueprints
 api.register_blueprint(accounts_blp)
 api.register_blueprint(campaigns_blp)
+api.register_blueprint(corpora_blp)
 api.register_blueprint(annotators_blp)
 api.register_blueprint(analytics_blp)
 api.register_blueprint(tasks_blp)

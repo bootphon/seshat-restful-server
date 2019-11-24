@@ -1,34 +1,21 @@
-from pathlib import Path
 from typing import Dict
 
 import slugify
-from flask import current_app
 from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.parsers import list_parsers
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CorpusFile, CampaignWikiPageUpdate, TierSpecifications, CheckingSchemeSummary, ParsersList
+    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..models.campaigns import Campaign
-from ..schemas.campaigns import CampaignCreation, CampaignStatus, CampaignWikiPage, CorporaListing
-from ..utils import list_subdirs, list_corpus_csv
+from ..schemas.campaigns import CampaignCreation, CampaignStatus, CampaignWikiPage
 
 campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
                           description="Operations to display and create campaigns")
-
-
-@campaigns_blp.route("available_corpora")
-class AvailableCorporaHandler(AdminMethodView):
-
-    @campaigns_blp.response(CorporaListing)
-    def get(self):
-        """Get a list of available folder and CSV corpora"""
-        return {"folders_corpora": list_subdirs(Path(current_app.config["CAMPAIGNS_FILES_ROOT"])),
-                "csv_corpora": list_corpus_csv(Path(current_app.config["CAMPAIGNS_FILES_ROOT"]))}
 
 
 @campaigns_blp.route("parsers/list/")
@@ -122,16 +109,6 @@ class ViewCampaignHandler(AdminMethodView):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         return [task.short_status for task in campaign.tasks]
-
-
-@campaigns_blp.route("files/list/<campaign_slug>")
-class GetCampaignCorpusFiles(AdminMethodView):
-
-    @campaigns_blp.response(CorpusFile(many=True))
-    def get(self, campaign_slug: str):
-        """Returns the full campaign data"""
-        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        return campaign.files
 
 
 @campaigns_blp.route("wiki/update/<campaign_slug>")

@@ -4,7 +4,6 @@ from marshmallow import validate
 from seshat.schemas.users import UserShortProfile
 
 
-
 class ParsersList(Schema):
     parser_names = fields.List(fields.Str)
 

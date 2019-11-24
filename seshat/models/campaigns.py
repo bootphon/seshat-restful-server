@@ -1,22 +1,15 @@
-import logging
 import zipfile
-from collections import Counter
-from csv import DictReader
 from datetime import datetime
-from functools import lru_cache
 from io import BytesIO
 from pathlib import Path
 
-import ffmpeg
-from flask import current_app
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
                          ValidationError, signals, PULL, IntField)
 from textgrid import TextGrid
 
-from seshat.utils import percentage
+from .corpora import CSVCorpus, BaseCorpus
 from .tasks import BaseTask
-from .corpora import BaseCorpus
 from .textgrids import SingleAnnotatorTextGrid
 from .tg_checking import TextGridCheckingScheme
 
@@ -47,7 +40,7 @@ class Campaign(Document):
     wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
     # either a CSV Corpus or a corpus folder
-    corpus_path = ReferenceField(BaseCorpus, required=True)
+    corpus: BaseCorpus = ReferenceField('BaseCorpus', required=True)
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
     # this object stores the campaign annotation checking scheme
@@ -58,7 +51,7 @@ class Campaign(Document):
     stats = EmbeddedDocumentField(CampaignStats)
 
     def validate(self, clean=True):
-        if self.corpus_type == "csv" and self.serve_audio:
+        if isinstance(self.corpus, CSVCorpus) and self.serve_audio:
             raise ValidationError("Can't serve audio files with a csv corpus")
         super().validate(clean)
 
@@ -69,67 +62,9 @@ class Campaign(Document):
         for task in document.tasks:
             task.delete()
 
-    @property
-    def real_corpus_path(self):
-        return Path(current_app.config["CAMPAIGNS_FILES_ROOT"]) / Path(self.corpus_path)
-
-    @property
-    def corpus_type(self) -> str:
-        corpus_path = self.real_corpus_path
-        if corpus_path.is_dir():
-            return "folder"
-        elif corpus_path.is_file() and corpus_path.suffix == ".csv":
-            return "csv"
-        else:
-            logging.warning("Corpus %s isn't csv file or corpora folder" % str(corpus_path))
-
-    @property
-    @lru_cache(maxsize=1024) # TODO : maybe tweak this caching value?
-    def csv_table(self):
-        csv_path = self.real_corpus_path
-        with open(str(csv_path), "r") as csv_data_file:
-            reader = DictReader(csv_data_file)
-            return {row["filename"]: float(row["duration"]) for row in reader}
-
-    def get_file_duration(self, filename: str):
-        if self.corpus_type == "csv":
-            return self.csv_table[filename]
-        else:
-            filepath = self.real_corpus_path / Path(filename)
-        try:
-            return float(ffmpeg.probe(str(filepath))["format"]["duration"])
-        except ffmpeg.Error as err:
-            print("FFProbe error: " + err.stderr.decode('utf-8'))
-            raise err
-
-    def populate_audio_files(self):
-        if self.corpus_type == "csv":
-            with open(str(self.real_corpus_path), "r") as csv_data_file:
-                reader = DictReader(csv_data_file)
-                if not set(reader.fieldnames) == {"filename", "duration"}:
-                    raise ValueError("The CSV corpora file doesn't have the right headers (filename and duration)")
-                return [row["filename"] for row in reader]
-
-        else:  # it's an audio file tree
-            audio_files = []
-            authorized_extensions = current_app.config["SUPPORTED_AUDIO_EXTENSIONS"]
-            for filepath in self.real_corpus_path.glob("**/*"):
-                if filepath.suffix.strip(".").lower() not in authorized_extensions:
-                    continue
-                audio_files.append(str(Path(*filepath.parts[1:])))
-            return audio_files
-
-    def _tasks_for_file(self, audio_file: str):
+    def tasks_for_file(self, audio_file: str):
         tasks = [task for task in self.tasks]
         return len([task for task in tasks if task.data_file == audio_file])
-
-    @property
-    def files(self):
-        return [{"path": file_path,
-                 "tasks_count": self._tasks_for_file(file_path),
-                 "type": Path(file_path).suffix.strip(".")
-                 }
-                for file_path in self.populate_audio_files()]
 
     @property
     def active_tasks(self):
@@ -143,43 +78,12 @@ class Campaign(Document):
                 all_annotators.add(annotator)
         return list(all_annotators)
 
-    def compute_short_stats(self):
-        # TODO update this
-        tasks = {
-            "done": len([task for task in self.tasks if task.is_done]),
-            "assigned": len(self.tasks)
-        }
-        tasks["percentage"] = percentage(tasks["done"], tasks["assigned"])
-
-        all_audio_files = self.populate_audio_files()
-        files = {
-            "total": len(all_audio_files),
-            "tasked": len(set(task.data_file for task in self.tasks)
-                          .intersection(set(map(str, all_audio_files))))
-        }
-        files["percentage"] = percentage(files["tasked"], files["total"])
-        self.stats = {
-            "tasks": tasks,
-            "files": files,
-        }
-
-    def compute_full_stats(self):
-        # TODO change this
-        self.compute_short_stats()
-
-        all_assignments = []
-        for task in self.tasks:
-            all_assignments += task.annotators
-        all_assignments = map(lambda x: x.username, all_assignments)
-        assignments_counts = Counter(all_assignments)
-        self.stats["assignments_counts"] = assignments_counts
-
     def gen_template_tg(self, filename: str) -> SingleAnnotatorTextGrid:
-        file_duration = self.get_file_duration(filename)
+        audio_file = self.corpus.files[filename]
         if self.checking_scheme is None:
-            tg = TextGrid(name=filename, maxTime=file_duration)
+            tg = TextGrid(name=filename, maxTime=audio_file.duration)
         else:
-            tg = self.checking_scheme.gen_template_tg(file_duration, filename)
+            tg = self.checking_scheme.gen_template_tg(audio_file.duration, filename)
         return SingleAnnotatorTextGrid.from_textgrid(tg, [self.creator], None)
 
     def get_full_annots_archive(self):
@@ -217,10 +121,10 @@ class Campaign(Document):
             "stats": {
                 "total_tasks": len(self.tasks),
                 "completed_tasks": len([task for task in self.tasks if task.is_done]),
-                "total_files": len(self.populate_audio_files()),
+                "total_files": self.corpus.files_count,
                 "assigned_files": len(set(task.data_file for task in self.tasks)),
             },
-            "corpus_path": self.corpus_path,
+            "corpus_path": self.corpus.name,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
             "annotators": [annotator.short_profile for annotator in self.annotators],
