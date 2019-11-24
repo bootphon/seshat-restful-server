@@ -16,6 +16,7 @@ from textgrid import TextGrid
 
 from seshat.utils import percentage
 from .tasks import BaseTask
+from .corpora import BaseCorpus
 from .textgrids import SingleAnnotatorTextGrid
 from .tg_checking import TextGridCheckingScheme
 
@@ -45,8 +46,8 @@ class Campaign(Document):
     last_update = DateTimeField(default=datetime.now)
     wiki_page = StringField()
     tasks = ListField(ReferenceField('BaseTask'))
-    # either the CSV or the corpus folder
-    corpus_path = StringField(required=True)
+    # either a CSV Corpus or a corpus folder
+    corpus_path = ReferenceField(BaseCorpus, required=True)
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
     # this object stores the campaign annotation checking scheme

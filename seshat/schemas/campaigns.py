@@ -4,18 +4,6 @@ from marshmallow import validate
 from seshat.schemas.users import UserShortProfile
 
 
-class CorpusFile(Schema):
-    """File information: used for task assignment"""
-    path = fields.Str(required=True)
-    tasks_count = fields.Int(required=True)
-    type = fields.Str(required=True)
-
-
-class CorporaListing(Schema):
-    """All available corpora listing: used for campaign creation"""
-    folders_corpora = fields.List(fields.Str())
-    csv_corpora = fields.List(fields.Str())
-
 
 class ParsersList(Schema):
     parser_names = fields.List(fields.Str)
