@@ -76,13 +76,18 @@ config_mapping = {
 }
 
 
-def get_config():
-    """Returns the right config, depending on the set FLASK_CONFIG environment variable.
+def get_config(flask_config=None):
+    """Returns the right config. If not argument is passed, loads the config
+     depending on the set FLASK_CONFIG environment variable.
     Falls back to ProductionConfig if none is found"""
-    # loading optional dotenv file. It won't override any existing env variables
-    load_dotenv(dotenv_path=Path(__file__).absolute().parent.parent / Path(".env"))
-    config_name = os.environ.get("FLASK_CONFIG")
-    config_cls = config_mapping.get(config_name, ProductionConfig)
+    # the "passed argument" way supercedes everything.
+    if flask_config is not None:
+        config_cls = config_mapping[flask_config]
+    else:
+        # loading optional dotenv file. It won't override any existing env variables
+        load_dotenv(dotenv_path=Path(__file__).absolute().parent.parent / Path(".env"))
+        config_name = os.environ.get("FLASK_CONFIG")
+        config_cls = config_mapping.get(config_name, ProductionConfig)
 
     # if the config is for regular production, overloading default attributes
     # based on the env variables or the .env file variables
