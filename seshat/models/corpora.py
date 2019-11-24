@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import ffmpeg
 from mongoengine import Document, StringField, EmbeddedDocument, FloatField, MapField, DateTimeField, \
-    EmbeddedDocumentField
+    EmbeddedDocumentField, EmbeddedDocumentListField
 
 from seshat.configs import get_config
 
@@ -26,12 +26,13 @@ class BaseCorpus(Document):
     CORPUS_TYPE = "BASE CORPUS"
     meta = {'allow_inheritance': True}
     name = StringField(primary_key=True, required=True)
-    files: Dict[str, AudioFile] = MapField(EmbeddedDocumentField(AudioFile), default={})
+    files: List[AudioFile] = EmbeddedDocumentListField(AudioFile, default=[])
     last_refresh = DateTimeField(default=datetime.now)
 
     @property
     def real_corpus_path(self):
         return Path(get_config().CAMPAIGNS_FILES_ROOT) / Path(self.name)
+
 
     @staticmethod
     def list_corpus_csv(path: Path):
@@ -63,7 +64,16 @@ class BaseCorpus(Document):
         return len(self.files)
 
     def get_audio_file_duration(self, filename: str):
-        return self.files[filename].duration
+        for audio_file in self.files:
+            if filename == audio_file.filename:
+                return audio_file.duration
+        raise ValueError("Couldn't find audio file in corpus")
+
+    def get_file(self, filename: str):
+        for audio_file in self.files:
+            if filename == audio_file.filename:
+                return audio_file
+        raise ValueError("Couldn't find audio file in corpus")
 
     def populate_audio_files(self):
         raise NotImplemented()
@@ -79,13 +89,14 @@ class BaseCorpus(Document):
 
     @property
     def full_summary(self):
-        return {**self.short_summary, "files": [file.to_msg() for file in self.files.values()]}
+        return {**self.short_summary, "files": [file.to_msg() for file in self.files]}
 
 
 class FolderCorpus(BaseCorpus):
     CORPUS_TYPE = "FOLDER"
 
     def populate_audio_files(self):
+        self.files = []
         authorized_extensions = get_config().SUPPORTED_AUDIO_EXTENSIONS
         for filepath in self.real_corpus_path.glob("**/*"):
             if filepath.suffix.strip(".").lower() not in authorized_extensions:
@@ -100,13 +111,14 @@ class FolderCorpus(BaseCorpus):
             except ValueError:
                 continue
             filename = str(Path(*filepath.parts[1:]))
-            self.files[filename] = AudioFile(filename=filename, duration=duration)
+            self.files.append(AudioFile(filename=filename, duration=duration))
 
 
 class CSVCorpus(BaseCorpus):
     CORPUS_TYPE = "CSV"
 
     def populate_audio_files(self):
+        self.files = []
         with open(str(self.real_corpus_path), "r") as csv_data_file:
             reader = DictReader(csv_data_file)
             if not set(reader.fieldnames) == {"filename", "duration"}:
@@ -125,8 +137,8 @@ class CSVCorpus(BaseCorpus):
                     logging.warning(f"Dropping file ${row['filename']} because duration is 0 seconds")
                     continue
 
-                self.files[row["filename"]] = AudioFile(filename=row["filename"],
-                                                        duration=duration)
+                self.files.append(AudioFile(filename=row["filename"],
+                                            duration=duration))
 
 
 

@@ -27,10 +27,9 @@ class TierSpecifications(Schema):
 
 class CampaignCreation(Schema):
     name = fields.Str(required=True, validate=validate.Length(max=100))
-    description = fields.Str()
+    description = fields.Str(required=True)
     # these two field are exclusive to one another
-    data_csv = fields.Str()
-    data_folder = fields.Str()
+    corpus = fields.Str(required=True)
     enable_audio_dl = fields.Bool(required=True)
     check_textgrids = fields.Bool(default=True)
     checking_scheme = fields.List(fields.Nested(TierSpecifications))

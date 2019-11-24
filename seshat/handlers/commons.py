@@ -30,7 +30,10 @@ class LoggedInMethodView(MethodView):
         except DecodeError:
             return abort(403, message="Invalid token")
 
-        self.user = User.objects.get(username=token_data["username"])
+        try:
+            self.user = User.objects.get(username=token_data["username"])
+        except DoesNotExist:
+            abort(403, message="Not Authorized")
         self.user.check_token(token)
         self.check_user_type()
         try:

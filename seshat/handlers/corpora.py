@@ -30,10 +30,10 @@ class ListCorpusFilesHandler(AdminMethodView):
 
     @corpora_blp.response(CorpusFullSummary)
     def get(self, campaign_slug: str):
-        campaign: Campaign = BaseCorpus.objects.get(slug=campaign_slug)
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         corpus_summary = campaign.corpus.full_summary
         for audiofile in corpus_summary["files"]:
-            audiofile["tasks_count"] = campaign.tasks_for_file(audiofile["name"])
+            audiofile["tasks_count"] = campaign.tasks_for_file(audiofile["filename"])
         return corpus_summary
 
 
@@ -44,16 +44,16 @@ class RefreshCorporaHandler(AdminMethodView):
     def get(self):
         found_corpora = BaseCorpus.populate_corpora()
         # TODO : maybe just retrieve only the paths using a filter
-        known_corpora_paths = set(corpus.path for corpus in BaseCorpus.objects)
+        known_corpora_paths = set(corpus.name for corpus in BaseCorpus.objects)
         # if the corpus isn't already in the DB, populate its audio files,
         # and save it
         for corpus in found_corpora:
-            if corpus.path not in known_corpora_paths:
+            if corpus.name not in known_corpora_paths:
                 corpus.populate_audio_files()
                 corpus.save()
 
 
-@corpora_blp.route("/corpus/<corpus_name>")
+@corpora_blp.route("/refresh/<corpus_name>")
 class RefreshCorpusListingHandler(AdminMethodView):
 
     @corpora_blp.response(code=200)

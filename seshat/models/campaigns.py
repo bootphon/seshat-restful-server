@@ -79,7 +79,7 @@ class Campaign(Document):
         return list(all_annotators)
 
     def gen_template_tg(self, filename: str) -> SingleAnnotatorTextGrid:
-        audio_file = self.corpus.files[filename]
+        audio_file = self.corpus.get_file(filename)
         if self.checking_scheme is None:
             tg = TextGrid(name=filename, maxTime=audio_file.duration)
         else:

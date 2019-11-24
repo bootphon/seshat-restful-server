@@ -4,6 +4,7 @@ from marshmallow import Schema, fields
 class CorpusFile(Schema):
     """File information: used for task assignment and corpus listing"""
     filename = fields.Str(required=True)
+    duration = fields.Float(required=True)
     tasks_count = fields.Int()
 
 

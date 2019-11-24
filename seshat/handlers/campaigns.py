@@ -4,6 +4,7 @@ import slugify
 from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
+from seshat.models import BaseCorpus
 from seshat.models.tg_checking import TextGridCheckingScheme
 from seshat.parsers import list_parsers
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
@@ -42,16 +43,13 @@ class CampaignAdminHandler(AdminMethodView):
             return abort(403, message="Invalid tier specifications : %s" % str(e))
 
         try:
-            if args.get("data_csv") is not None:
-                corpus_path = args["data_csv"]
-            else:
-                corpus_path = args["data_folder"]
+            corpus : BaseCorpus = BaseCorpus.objects.get(name=args["corpus"])
             campaign_slug = slugify.slugify(args["name"])
             wiki_page = "# %s's wiki page\n\nNothing for now..." % args["name"]
             new_campaign = Campaign(name=args["name"],
                                     slug=campaign_slug,
                                     description=args["description"],
-                                    corpus_path=corpus_path,
+                                    corpus=corpus,
                                     check_textgrids=args["check_textgrids"],
                                     serve_audio=args["enable_audio_dl"],
                                     wiki_page=wiki_page,
