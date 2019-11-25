@@ -46,7 +46,7 @@ class CampaignAdminHandler(AdminMethodView):
             checking_scheme = None
 
         try:
-            corpus : BaseCorpus = BaseCorpus.objects.get(name=args["corpus"])
+            corpus: BaseCorpus = BaseCorpus.objects.get(name=args["corpus"])
             campaign_slug = slugify.slugify(args["name"])
             wiki_page = "# %s's wiki page\n\nNothing for now..." % args["name"]
             new_campaign = Campaign(name=args["name"],
@@ -58,7 +58,9 @@ class CampaignAdminHandler(AdminMethodView):
                                     wiki_page=wiki_page,
                                     creator=self.user,
                                     subscribers=[self.user])
-            new_campaign.save()
+            # Force insert forces the insertion of a new campaign.
+            # If there already is one with that slug, will raise an error
+            new_campaign.save(force_insert=True)
             if checking_scheme is not None:
                 checking_scheme.save()
             new_campaign.checking_scheme = checking_scheme

@@ -30,7 +30,8 @@ class ManageAnnotatorHandler(AdminMethodView):
             pass_hash, salt = Annotator.create_password_hash(password)
             new_user.salted_password_hash = pass_hash
             new_user.salt = salt
-            new_user.save()
+            # force insert tries to create a new user, doesn't overwrite existing one
+            new_user.save(force_insert=True)
         except NotUniqueError:
             abort(403, message="Username or email already present in database")
 
