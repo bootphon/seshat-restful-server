@@ -11,6 +11,7 @@ from ..parsers.base import CategoricalChecker, AnnotationError, AnnotationChecke
 
 
 class TierScheme(EmbeddedDocument):
+    CHECKING_TYPE = ""
     meta = {"allow_inheritance": True}
     name = StringField(required=True)
     # tier has to be there for the file to be valid
@@ -35,19 +36,20 @@ class TierScheme(EmbeddedDocument):
             "name": self.name,
             "required": self.required,
             "allow_empty": self.allow_empty,
+            "checking_type": self.CHECKING_TYPE
         }
 
 
 class UnCheckedTier(TierScheme):
+    CHECKING_TYPE = "NONE"
 
     def check_tier(self, tier: IntervalTier):
         pass
 
-    def to_specs(self):
-        return {**super().to_specs(), "content_type": "NONE"}
 
 
 class CategoricalTier(TierScheme):
+    CHECKING_TYPE = "CATEGORICAL"
     categories = ListField(StringField())
 
     def __init__(self, *args, **kwargs):
@@ -55,10 +57,11 @@ class CategoricalTier(TierScheme):
         self.parser = CategoricalChecker(self.categories)
 
     def to_specs(self):
-        return {**super().to_specs(), "content_type": "CATEGORICAL", "categories": self.categories}
+        return {**super().to_specs(), "categories": self.categories}
 
 
 class ParsedTier(TierScheme):
+    CHECKING_TYPE = "PARSED"
     parser_name = StringField(required=True)
 
     def __init__(self, *args, **kwargs):
@@ -66,7 +69,7 @@ class ParsedTier(TierScheme):
         self.parser = parser_factory(self.parser_name)
 
     def to_specs(self):
-        return {**super().to_specs(), "content_type": "PARSED", "parser_name": self.parser_name}
+        return {**super().to_specs(), "parser_name": self.parser_name}
 
 
 class TextGridCheckingScheme(Document):
@@ -83,12 +86,12 @@ class TextGridCheckingScheme(Document):
     def from_tierspecs_schema(cls, scheme_data: List, scheme_name: str):
         new_scheme = cls(name=scheme_name)
         for tier_specs in scheme_data:
-            if tier_specs.get("content_type") == "CATEGORIES":
+            if tier_specs.get("checking_type") == "CATEGORICAL":
                 new_tier_scheme = CategoricalTier(name=tier_specs["name"],
                                                   required=tier_specs["required"],
                                                   allow_empty=tier_specs["allow_empty"],
                                                   categories=tier_specs["categories"])
-            elif tier_specs.get("content_type") == "PARSED":
+            elif tier_specs.get("checking_type") == "PARSED":
                 new_tier_scheme = ParsedTier(name=tier_specs["name"],
                                              required=tier_specs["required"],
                                              allow_empty=tier_specs["allow_empty"],

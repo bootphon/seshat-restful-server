@@ -13,16 +13,16 @@ class TierSpecifications(Schema):
     required = fields.Bool(required=True)
     allow_empty = fields.Bool(default=True)
     name = fields.Str(required=True)
-    content_type = fields.Str()
+    checking_type = fields.Str()
     # used if the content type is categorical
     categories = fields.List(fields.Str())
     # used if the content type is parsed
     parser_name = fields.Str()
 
-    @validates("content_type")
-    def validate_content_type(self, value: str):
+    @validates("checking_type")
+    def validate_checking_type(self, value: str):
         if value not in ("CATEGORICAL", "PARSED", "NONE"):
-            raise ValidationError("Invalid content type category.")
+            raise ValidationError("Invalid checking_type category.")
 
 
 class CampaignCreation(Schema):

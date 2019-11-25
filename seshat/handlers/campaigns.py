@@ -59,7 +59,8 @@ class CampaignAdminHandler(AdminMethodView):
                                     creator=self.user,
                                     subscribers=[self.user])
             new_campaign.save()
-            checking_scheme.save()
+            if checking_scheme is not None:
+                checking_scheme.save()
             new_campaign.checking_scheme = checking_scheme
             new_campaign.save()
             return {"slug": new_campaign.slug}
