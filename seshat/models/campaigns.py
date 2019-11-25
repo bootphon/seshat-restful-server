@@ -44,7 +44,7 @@ class Campaign(Document):
     # the audio file is being served in the starter zip
     serve_audio = BooleanField(default=False)
     # this object stores the campaign annotation checking scheme
-    checking_scheme: TextGridCheckingScheme = ReferenceField(TextGridCheckingScheme)
+    checking_scheme: TextGridCheckingScheme = ReferenceField('TextGridCheckingScheme')
     # if this is false, textgrid aren't checked (except for the merge part)
     check_textgrids = BooleanField(default=True)
     # updated on trigger

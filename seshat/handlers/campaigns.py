@@ -34,13 +34,16 @@ class CampaignAdminHandler(AdminMethodView):
     @campaigns_blp.response(CampaignSlug, code=200)
     def post(self, args: Dict):
         """Creates a new campaign"""
-        try:
-            checking_scheme: TextGridCheckingScheme = TextGridCheckingScheme.from_tierspecs_schema(
-                scheme_data=args["checking_scheme"],
-                scheme_name=args["name"])
-            checking_scheme.validate()
-        except ValidationError as e:
-            return abort(403, message="Invalid tier specifications : %s" % str(e))
+        if args["check_textgrids"]:
+            try:
+                checking_scheme: TextGridCheckingScheme = TextGridCheckingScheme.from_tierspecs_schema(
+                    scheme_data=args["checking_scheme"],
+                    scheme_name=args["name"])
+                checking_scheme.validate()
+            except ValidationError as e:
+                return abort(403, message="Invalid tier specifications : %s" % str(e))
+        else:
+            checking_scheme = None
 
         try:
             corpus : BaseCorpus = BaseCorpus.objects.get(name=args["corpus"])
@@ -56,10 +59,11 @@ class CampaignAdminHandler(AdminMethodView):
                                     creator=self.user,
                                     subscribers=[self.user])
             new_campaign.save()
+            checking_scheme.save()
             new_campaign.checking_scheme = checking_scheme
-            new_campaign.cascade_save()
+            new_campaign.save()
             return {"slug": new_campaign.slug}
-        except NotUniqueError:
+        except NotUniqueError as err:
             abort(403, message="The campaign name is too close to another campaign name")
         except ValidationError as e:
             abort(403, "Invalid campaign specifications : %s" % str(e))
@@ -100,7 +104,7 @@ class ViewCampaignHandler(AdminMethodView):
 
 
 @campaigns_blp.route("list/tasks/<campaign_slug>")
-class ViewCampaignHandler(AdminMethodView):
+class ListCampaignTasksHandler(AdminMethodView):
 
     @campaigns_blp.response(TaskShortStatus(many=True))
     def get(self, campaign_slug: str):
@@ -153,7 +157,8 @@ class CampaignSubscriptionHandler(AdminMethodView):
 @campaigns_blp.route("/checking_scheme/<campaign_slug>")
 class CampaignCheckingScheme(LoggedInMethodView):
 
-    @campaigns_blp.response(CheckingSchemeSummary, code=200)
+    @campaigns_blp.response(CheckingSchemeSummary)
+    @campaigns_blp.response(code=200)
     def get(self, campaign_slug: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         if campaign.check_textgrids:

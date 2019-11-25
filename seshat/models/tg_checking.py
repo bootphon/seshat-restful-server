@@ -125,7 +125,7 @@ class TextGridCheckingScheme(Document):
     @property
     def summary(self):
         return {
-            "id": self.id,
+            "id": str(self.id),
             "name": self.name,
             "tier_specs": [tier.to_specs() for tier in self.tiers_specs.values()]
         }
