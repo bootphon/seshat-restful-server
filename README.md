@@ -19,7 +19,7 @@ Seshat's API server relies on the following dependencies :
 
 This is a quick manual installation overview, **just aimed at installing the server**.
 We provide more complete for both Seshat's server and [client](https://github.com/bootphon/seshat-angular-client) 
-installation instructions in [our install tutorial](https://seshat-annotation.readthedocs.io/en/latest/).
+installation instructions in [our install tutorial](https://seshat-annotation.readthedocs.io/en/latest/install.html).
 
 First, git clone the repository, set up its virtual environment, install its dependencies ,
 and set the server's config to `prod` via a dotenv file:
