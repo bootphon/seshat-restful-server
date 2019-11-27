@@ -24,7 +24,8 @@ def main():
                      salted_password_hash=pass_hash,
                      salt=salt)
     try:
-        new_user.save()
+        # force insert is to prevent the overwriting of an existing user
+        new_user.save(force_insert=True)
     except NotUniqueError:
         print("Error: username or email are not unique")
 
