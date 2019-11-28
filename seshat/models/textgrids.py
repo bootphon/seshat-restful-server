@@ -103,7 +103,7 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
 
         # remaining tiers are invalid
         if tg_tier_names:
-            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % " ,".join(tg_tier_names))
+            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % ", ".join(tg_tier_names))
 
     def check_annotations(self):
         valid_tiers = set(self.checking_scheme.all_tiers_names) & set(self.textgrid.getNames())
@@ -212,7 +212,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
 
         # remaining tiers are invalid
         if tier_names:
-            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % " ,".join(tier_names))
+            error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % ", ".join(tier_names))
         else:
             # checking that both top and bottom have the same tiers
             no_suffix = set(re.sub("(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX), "", name)

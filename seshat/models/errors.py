@@ -75,7 +75,7 @@ class TextGridStructuralError(BaseTextGridError):
     """Something is wrong with the textgrid as a whole"""
     msg: str
 
-    def to_dict(self):
+    def to_msg(self):
         return {"msg": self.msg}
 
 
