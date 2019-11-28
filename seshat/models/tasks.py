@@ -245,7 +245,7 @@ class BaseTask(Document):
                     % (commenter.full_name, self.data_file),
             notif_type="comment",
             object_type="task",
-            object_id=self.id,
+            object_id=str(self.id),
             users=notified_users)
 
     def notify_done(self):
