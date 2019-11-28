@@ -9,7 +9,7 @@ from seshat.models.tg_checking import TextGridCheckingScheme, ParsedTier
 from seshat.parsers import list_parsers
 from seshat.parsers.base import AnnotationError
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList, TierQuickCheck
+    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList, TierQuickCheck, QuickCheckResponse
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -171,12 +171,15 @@ class CampaignCheckingScheme(LoggedInMethodView):
             return # nothing is returned
 
 
-@campaigns_blp.route("/check/<campaign_slug>")
+@campaigns_blp.route("/quickcheck/<campaign_slug>")
 class ParsedTierQuickCheck(LoggedInMethodView):
 
     @campaigns_blp.arguments(TierQuickCheck, as_kwargs=True)
+    @campaigns_blp.response(QuickCheckResponse)
     def get(self, campaign_slug: str, tier_name: str, annotation: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        if not campaign.check_textgrids:
+            abort(403, message="No checking scheme for that campaign")
         try:
             tier_specs = campaign.checking_scheme.tiers_specs[tier_name]
         except KeyError:
