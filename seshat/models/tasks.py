@@ -241,7 +241,7 @@ class BaseTask(Document):
         notified_users: List[User] = self.annotators + self.campaign.subscribers
         notified_users.remove(commenter)
         notif_dispatch(
-            message="Annotator %s commented on the annotation task on file %s"
+            message="%s commented on the annotation task on file %s"
                     % (commenter.full_name, self.data_file),
             notif_type="comment",
             object_type="task",

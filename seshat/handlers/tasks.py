@@ -167,3 +167,4 @@ class TaskCommentHandler(LoggedInMethodView):
         if task.is_locked:
             return
         task.add_comment(content, self.user)
+        task.notify_comment(self.user)
