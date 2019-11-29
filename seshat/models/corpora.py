@@ -33,6 +33,9 @@ class BaseCorpus(Document):
     def real_corpus_path(self):
         return Path(get_config().CAMPAIGNS_FILES_ROOT) / Path(self.name)
 
+    @property
+    def exists(self):
+        raise NotImplemented()
 
     @staticmethod
     def list_corpus_csv(path: Path):
@@ -95,6 +98,10 @@ class BaseCorpus(Document):
 class FolderCorpus(BaseCorpus):
     CORPUS_TYPE = "FOLDER"
 
+    @property
+    def exists(self):
+        return self.real_corpus_path.is_dir()
+
     def populate_audio_files(self):
         self.files = []
         authorized_extensions = get_config().SUPPORTED_AUDIO_EXTENSIONS
@@ -116,6 +123,10 @@ class FolderCorpus(BaseCorpus):
 
 class CSVCorpus(BaseCorpus):
     CORPUS_TYPE = "CSV"
+
+    @property
+    def exists(self):
+        return self.real_corpus_path.is_file() and self.real_corpus_path.suffix == ".csv"
 
     def populate_audio_files(self):
         self.files = []

@@ -96,3 +96,13 @@ class CheckingSchemeSummary(Schema):
     id = fields.Str(required=True)
     name = fields.Str(required=True)
     tier_specs = fields.List(fields.Nested(TierSpecifications))
+
+
+class TierQuickCheck(Schema):
+    tier_name = fields.Str(required=True)
+    annotation = fields.Str(required=True)
+
+
+class QuickCheckResponse(Schema):
+    is_valid = fields.Bool(required=True)
+    error_msg = fields.Str()

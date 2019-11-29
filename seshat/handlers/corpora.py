@@ -1,4 +1,5 @@
 from flask_smorest import Blueprint
+from mongoengine import Q
 
 from ..schemas.corpora import CorpusShortSummary, CorpusFullSummary
 from .commons import AdminMethodView
@@ -51,6 +52,15 @@ class RefreshCorporaHandler(AdminMethodView):
             if corpus.name not in known_corpora_paths:
                 corpus.populate_audio_files()
                 corpus.save()
+
+        # cleaning up deleted corpora not referenced by any campaign
+        for corpus in BaseCorpus.objects:
+            if corpus.exists:
+                continue
+
+            campaigns_with_corpus = Campaign.objects(corpus=corpus).count()
+            if campaigns_with_corpus == 0:
+                corpus.delete()
 
 
 @corpora_blp.route("/refresh/<corpus_name>")

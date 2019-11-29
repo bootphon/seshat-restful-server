@@ -5,10 +5,11 @@ from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
 from seshat.models import BaseCorpus
-from seshat.models.tg_checking import TextGridCheckingScheme
+from seshat.models.tg_checking import TextGridCheckingScheme, ParsedTier
 from seshat.parsers import list_parsers
+from seshat.parsers.base import AnnotationError
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList
+    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList, TierQuickCheck, QuickCheckResponse
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -168,3 +169,32 @@ class CampaignCheckingScheme(LoggedInMethodView):
             return campaign.checking_scheme.summary
         else:
             return # nothing is returned
+
+
+@campaigns_blp.route("/quickcheck/<campaign_slug>")
+class ParsedTierQuickCheck(LoggedInMethodView):
+
+    @campaigns_blp.arguments(TierQuickCheck, as_kwargs=True)
+    @campaigns_blp.response(QuickCheckResponse)
+    def get(self, campaign_slug: str, tier_name: str, annotation: str):
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        if not campaign.check_textgrids:
+            abort(403, message="No checking scheme for that campaign")
+        try:
+            tier_specs = campaign.checking_scheme.tiers_specs[tier_name]
+        except KeyError:
+            return abort(403, message="Checking scheme for campaign %s doesn't have a tier named %s"
+                                      % (campaign_slug, tier_name))
+
+        if not isinstance(tier_specs, ParsedTier):
+            return abort(403, message="Annotation checking is only for parsed tiers")
+
+        try:
+            tier_specs.parser.check_annotation(annotation)
+        except AnnotationError as err:
+            return {
+                "is_valid": False,
+                "error_msg": str(err)
+            }
+        else:
+            return {"is_valid": True}

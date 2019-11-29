@@ -15,7 +15,7 @@ from mongoengine import (EmbeddedDocument, ReferenceField, DateTimeField,
 from textgrid import TextGrid, IntervalTier
 
 from seshat.models.errors import MergeConflictsError
-from seshat.models.textgrids import MergedAnnotsTextGrid
+from seshat.models.textgrids import MergedAnnotsTextGrid, LoggedTextGrid
 from .commons import notif_dispatch
 from .errors import error_log
 from .textgrids import MergedTimesTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid
@@ -40,19 +40,8 @@ class FileDownload(EmbeddedDocument):
 
 
 class FileUpload(EmbeddedDocument):
-    uploader = ReferenceField('Annotator', required=True)
-    tg_file = ReferenceField('BaseTextGridDocument', required=True)
+    tg_file = ReferenceField('LoggedTextGrid', required=True)
     is_valid = BooleanField(required=True)
-    time = DateTimeField(default=datetime.now, equired=True)
-
-    @classmethod
-    def create(cls,
-               uploader: 'Annotator',
-               textgrid: 'BaseTextGridDocument',
-               is_valid: bool):
-        return cls(uploader=uploader,
-                   tg_file=textgrid,
-                   is_valid=is_valid)
 
 
 class BaseTask(Document):
@@ -150,18 +139,19 @@ class BaseTask(Document):
 
         return buffer.getvalue()
 
-    def _log_upload(self, textgrid, annotator, errors, is_valid: bool = None):
-        if is_valid is None:
-            is_valid = bool(errors)
+    def _log_upload(self, textgrid: str,
+                    annotator: 'Annotator',
+                    is_valid: bool = None):
+        logged_tg = LoggedTextGrid.from_textgrid(textgrid, [annotator], self)
+        logged_tg.save()
         self.file_uploads.append(
-            FileUpload.create(annotator, textgrid, is_valid)
+            FileUpload(tg_file=logged_tg, is_valid=is_valid)
         )
         self.save()
 
     def log_download(self, downloader: 'Annotator', file_name: str):
         self.file_downloads.append(
-            FileDownload(downloader=downloader.id,
-                         file=file_name)
+            FileDownload(downloader=downloader, file=file_name)
         )
         self.save()
 
@@ -241,11 +231,11 @@ class BaseTask(Document):
         notified_users: List[User] = self.annotators + self.campaign.subscribers
         notified_users.remove(commenter)
         notif_dispatch(
-            message="Annotator %s commented on the annotation task on file %s"
+            message="%s commented on the annotation task on file %s"
                     % (commenter.full_name, self.data_file),
             notif_type="comment",
             object_type="task",
-            object_id=self.id,
+            object_id=str(self.id),
             users=notified_users)
 
     def notify_done(self):
