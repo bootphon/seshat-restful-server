@@ -164,6 +164,7 @@ class TaskCommentHandler(LoggedInMethodView):
     def post(self, content: str, task_id: str):
         """Adds a comment to a task"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
-        if task.is_locked:
+        # If user is administrator, they can still comment even if the task is locked.
+        if task.is_locked and isinstance(self.user, Annotator):
             return
         task.add_comment(content, self.user)
