@@ -5,7 +5,7 @@ from pathlib import Path
 
 from mongoengine import (Document, StringField, ReferenceField, ListField,
                          DateTimeField, EmbeddedDocument, EmbeddedDocumentField, BooleanField,
-                         ValidationError, signals, PULL, IntField)
+                         ValidationError, signals, PULL, IntField, Q)
 from textgrid import TextGrid
 
 from .corpora import CSVCorpus, BaseCorpus
@@ -58,9 +58,11 @@ class Campaign(Document):
     @classmethod
     def post_delete_cleanup(cls, sender, document: 'Campaign', **kwargs):
         """Called upon a post_delete event. Takes care of cleaning up stuff, deleting the campaigns's
-        child tasks"""
+        child tasks and removing notifications related to that campaign"""
         for task in document.tasks:
             task.delete()
+        from .users import Notification
+        Notification.objects(Q(object_id=document.slug) & Q(object_type="campaign"))
 
     def tasks_for_file(self, audio_file: str):
         tasks = [task for task in self.tasks]
