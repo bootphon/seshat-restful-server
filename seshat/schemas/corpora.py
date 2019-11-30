@@ -5,6 +5,8 @@ class CorpusFile(Schema):
     """File information: used for task assignment and corpus listing"""
     filename = fields.Str(required=True)
     duration = fields.Float(required=True)
+    is_valid = fields.Bool(required=True)
+    error_msg = fields.Str(required=True)
     tasks_count = fields.Int()
 
 

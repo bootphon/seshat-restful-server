@@ -27,12 +27,13 @@ class ListCorpusFilesHandler(AdminMethodView):
 
 
 @corpora_blp.route("/list/for/<campaign_slug>")
-class ListCorpusFilesHandler(AdminMethodView):
+class ListCampaignCorpusFilesHandler(AdminMethodView):
 
     @corpora_blp.response(CorpusFullSummary)
     def get(self, campaign_slug: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         corpus_summary = campaign.corpus.full_summary
+        corpus_summary["files"] = list(filter(lambda file: file["is_valid"], corpus_summary["files"]))
         for audiofile in corpus_summary["files"]:
             audiofile["tasks_count"] = campaign.tasks_for_file(audiofile["filename"])
         return corpus_summary

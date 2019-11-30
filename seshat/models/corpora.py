@@ -1,12 +1,13 @@
 import logging
 from csv import DictReader
 from datetime import datetime
+from io import StringIO
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 
 import ffmpeg
-from mongoengine import Document, StringField, EmbeddedDocument, FloatField, MapField, DateTimeField, \
-    EmbeddedDocumentField, EmbeddedDocumentListField
+from mongoengine import Document, StringField, EmbeddedDocument, FloatField, DateTimeField, \
+    EmbeddedDocumentListField, BooleanField
 
 from seshat.configs import get_config
 
@@ -14,11 +15,15 @@ from seshat.configs import get_config
 class AudioFile(EmbeddedDocument):
     filename: str = StringField(required=True)
     duration: float = FloatField(required=True)
+    is_valid: bool = BooleanField(required=True, default=True)
+    error_msg: str = StringField()
 
     def to_msg(self):
         return {
             "filename": self.filename,
-            "duration": self.duration
+            "duration": self.duration,
+            "is_valid": self.is_valid,
+            "error_msg": self.error_msg
         }
 
 
@@ -64,7 +69,7 @@ class BaseCorpus(Document):
 
     @property
     def files_count(self):
-        return len(self.files)
+        return len([self.files for file in self.files if file.is_valid])
 
     def get_audio_file_duration(self, filename: str):
         for audio_file in self.files:
@@ -102,6 +107,14 @@ class FolderCorpus(BaseCorpus):
     def exists(self):
         return self.real_corpus_path.is_dir()
 
+    @staticmethod
+    def extract_ffprob_err(filepath: str, ffprobe_stderr: str):
+        """Looks for the right error line in the messy ffprobe output
+        The first line starting with the filename is considered to be the right one"""
+        for line in StringIO(ffprobe_stderr):
+            if line.startswith(filepath):
+                return line
+
     def populate_audio_files(self):
         self.files = []
         authorized_extensions = get_config().SUPPORTED_AUDIO_EXTENSIONS
@@ -110,15 +123,24 @@ class FolderCorpus(BaseCorpus):
                 continue
 
             try:
-                duration = float(ffmpeg.probe(str(filepath))["format"]["duration"])
+                ffprobe_output = ffmpeg.probe(str(filepath))["format"]["duration"]
+                duration = float(ffprobe_output)
+                is_valid = True
+                error_msg = None
+
             except ffmpeg.Error as err:
-                logging.warning(f"Dropping file ${str(filepath)} because FFprobe returned an error :"
-                                + err.stderr.decode('utf-8'))
-                continue
+                is_valid = False
+                error_msg = ("Ignored because FFprobe returned an error : "
+                             + self.extract_ffprob_err(str(filepath), err.stderr.decode('utf-8')))
+                duration = 0.0
+
             except ValueError:
-                continue
+                is_valid = False
+                duration = 0.0
+                error_msg = f"Ignored because Seshat couldn't convert ffprobe output \"${ffprobe_output}\" to float"
+
             filename = str(Path(*filepath.parts[1:]))
-            self.files.append(AudioFile(filename=filename, duration=duration))
+            self.files.append(AudioFile(filename=filename, duration=duration, error_msg=error_msg, is_valid=is_valid))
 
 
 class CSVCorpus(BaseCorpus):
@@ -140,16 +162,20 @@ class CSVCorpus(BaseCorpus):
             for row in reader:
                 try:
                     duration = float(row["duration"])
+                    is_valid = True
+                    error_msg = None
+
                 except ValueError:
-                    logging.warning(f"Dropping file ${row['filename']} because duration is not a valid float")
-                    continue
+                    duration = 0.0,
+                    is_valid = False,
+                    error_msg = "Ignored because duration is not a valid float"
 
                 if not duration:
-                    logging.warning(f"Dropping file ${row['filename']} because duration is 0 seconds")
-                    continue
+                    duration = 0.0,
+                    is_valid = False,
+                    error_msg = "Ignored because duration is 0 seconds"
 
                 self.files.append(AudioFile(filename=row["filename"],
-                                            duration=duration))
-
-
-
+                                            duration=duration,
+                                            is_valid=is_valid,
+                                            error_msg=error_msg))

@@ -165,7 +165,7 @@ class CampaignCheckingScheme(LoggedInMethodView):
     @campaigns_blp.response(code=200)
     def get(self, campaign_slug: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
-        if campaign.check_textgrids:
+        if campaign.check_textgrids and campaign.checking_scheme is not None:
             return campaign.checking_scheme.summary
         else:
             return # nothing is returned
