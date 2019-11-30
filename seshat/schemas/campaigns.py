@@ -4,8 +4,9 @@ from marshmallow import validate
 from seshat.schemas.users import UserShortProfile
 
 
-class ParsersList(Schema):
-    parser_names = fields.List(fields.Str)
+class ParserClass(Schema):
+    name = fields.Str(required=True)
+    module = fields.Str(required=True)
 
 
 class TierSpecifications(Schema):
@@ -17,7 +18,7 @@ class TierSpecifications(Schema):
     # used if the content type is categorical
     categories = fields.List(fields.Str())
     # used if the content type is parsed
-    parser_name = fields.Str()
+    parser = fields.Nested(ParserClass)
 
     @validates("checking_type")
     def validate_checking_type(self, value: str):

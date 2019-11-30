@@ -9,7 +9,7 @@ from seshat.models.tg_checking import TextGridCheckingScheme, ParsedTier
 from seshat.parsers import list_parsers
 from seshat.parsers.base import AnnotationError
 from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
-    CampaignWikiPageUpdate, CheckingSchemeSummary, ParsersList, TierQuickCheck, QuickCheckResponse
+    CampaignWikiPageUpdate, CheckingSchemeSummary, TierQuickCheck, QuickCheckResponse, ParserClass
 from seshat.schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
@@ -23,9 +23,13 @@ campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
 @campaigns_blp.route("parsers/list/")
 class AvailableParsersHandler(AdminMethodView):
 
-    @campaigns_blp.response(ParsersList)
+    @campaigns_blp.response(ParserClass(many=True))
     def get(self):
-        return {"parser_names": list(list_parsers().keys())}
+        parsers = []
+        for mod_name, parsers_dict in list_parsers().items():
+            for parser_name, parser_class in parsers_dict.items():
+                parsers.append({"name": parser_name, "module": mod_name})
+        return parsers
 
 
 @campaigns_blp.route("admin/")

@@ -25,7 +25,10 @@ class TierScheme(EmbeddedDocument):
         for i, annot in enumerate(tier):
             if not self.allow_empty and annot.mark.strip() == "":
                 error_log.log_annot(tier.name, i, annot, "Empty annotations are not authorized in this tier")
-
+            if self.parser is None:
+                error_log.log_structural("The parser for tier %s couldn't be found, this tier couldn't be checked. "
+                                         "Relay this error to your campaign manager to fix it." % tier.name)
+                return
             try:
                 self.parser.check_annotation(annot.mark)
             except AnnotationError as e:
@@ -63,13 +66,17 @@ class CategoricalTier(TierScheme):
 class ParsedTier(TierScheme):
     CHECKING_TYPE = "PARSED"
     parser_name = StringField(required=True)
+    parser_module = StringField(required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.parser = parser_factory(self.parser_name)
+        try:
+            self.parser = parser_factory(self.parser_module, self.parser_name)
+        except ValueError:
+            self.parser = None
 
     def to_specs(self):
-        return {**super().to_specs(), "parser_name": self.parser_name}
+        return {**super().to_specs(), "parser": {"name": self.parser_name, "module": self.parser_module}}
 
 
 class TextGridCheckingScheme(Document):
@@ -95,7 +102,8 @@ class TextGridCheckingScheme(Document):
                 new_tier_scheme = ParsedTier(name=tier_specs["name"],
                                              required=tier_specs["required"],
                                              allow_empty=tier_specs["allow_empty"],
-                                             parser_name=tier_specs["parser_name"])
+                                             parser_name=tier_specs["parser"]["name"],
+                                             parser_module=tier_specs["parser"]["module"])
 
             else:
                 new_tier_scheme = UnCheckedTier(name=tier_specs["name"],
