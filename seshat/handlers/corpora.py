@@ -1,9 +1,8 @@
 from flask_smorest import Blueprint
-from mongoengine import Q
 
-from ..schemas.corpora import CorpusShortSummary, CorpusFullSummary
 from .commons import AdminMethodView
 from ..models import BaseCorpus, Campaign
+from ..schemas.corpora import CorpusShortSummary, CorpusFullSummary
 
 corpora_blp = Blueprint("corpora", __name__, url_prefix="/corpora",
                         description="Endpoints to list and update audio corpora")

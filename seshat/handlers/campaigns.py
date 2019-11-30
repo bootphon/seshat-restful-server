@@ -4,13 +4,13 @@ import slugify
 from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
-from seshat.models import BaseCorpus
-from seshat.models.tg_checking import TextGridCheckingScheme, ParsedTier
-from seshat.parsers import list_parsers
-from seshat.parsers.base import AnnotationError
-from seshat.schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
+from ..models import BaseCorpus
+from ..models.tg_checking import TextGridCheckingScheme, ParsedTier
+from ..parsers import list_parsers
+from ..parsers.base import AnnotationError
+from ..schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
     CampaignWikiPageUpdate, CheckingSchemeSummary, TierQuickCheck, QuickCheckResponse, ParserClass
-from seshat.schemas.tasks import TaskShortStatus
+from ..schemas.tasks import TaskShortStatus
 from .commons import AdminMethodView
 from .commons import LoggedInMethodView
 from ..models.campaigns import Campaign

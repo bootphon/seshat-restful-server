@@ -4,7 +4,7 @@ from marshmallow import Schema, fields
 from mongoengine import Q
 from seshat.models import Annotator
 
-from seshat.schemas.users import UserShortProfile, NotificationsCount
+from ..schemas.users import UserShortProfile, NotificationsCount
 from ..models import User
 from ..schemas.users import LoginCredentials, ConnectionToken, \
     NotificationData, NotificationDelete

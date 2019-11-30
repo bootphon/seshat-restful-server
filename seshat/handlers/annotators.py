@@ -3,8 +3,8 @@ from typing import Dict
 from flask_smorest import Blueprint, abort
 from mongoengine import NotUniqueError, DoesNotExist, ValidationError
 
-from seshat.schemas.tasks import TaskShortStatus
-from seshat.schemas.users import AnnotatorEdition, AnnotatorPasswordChange
+from ..schemas.tasks import TaskShortStatus
+from ..schemas.users import AnnotatorEdition, AnnotatorPasswordChange
 from ..handlers.commons import AdminMethodView
 from ..schemas.users import AnnotatorCreation, AnnotatorProfile, AnnotatorDeletion, \
     AnnotatorLockRequest

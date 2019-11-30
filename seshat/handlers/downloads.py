@@ -7,8 +7,8 @@ from typing import List
 from flask import send_file, abort
 from flask_smorest import Blueprint
 
-from seshat.handlers.commons import AdminMethodView, AnnotatorMethodView
-from seshat.schemas.tasks import TaskTextGridList
+from .commons import AdminMethodView, AnnotatorMethodView
+from ..schemas.tasks import TaskTextGridList
 from .commons import LoggedInMethodView
 from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
 
