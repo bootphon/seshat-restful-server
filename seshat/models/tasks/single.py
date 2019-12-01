@@ -4,9 +4,9 @@ from typing import Dict, Optional
 
 from mongoengine import ReferenceField
 
-from seshat.models import BaseTextGridDocument, SingleAnnotatorTextGrid
-from seshat.models.errors import error_log
-from seshat.models.tasks.base import BaseTask
+from ..textgrids import BaseTextGridDocument, SingleAnnotatorTextGrid
+from ..errors import error_log
+from .base import BaseTask
 
 
 class SingleAnnotatorTask(BaseTask):

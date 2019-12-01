@@ -1,8 +1,8 @@
-from typing import Dict
+from typing import Dict, List
 
 from flask_smorest import Blueprint, abort
 
-from seshat.schemas.tasks import TaskFullStatusAnnotator
+from seshat.schemas.tasks import TaskFullStatusAnnotator, TaskIdsList
 from .commons import AnnotatorMethodView, AdminMethodView, LoggedInMethodView
 from ..models import SingleAnnotatorTask, DoubleAnnotatorTask, Annotator, Campaign, BaseTask
 from ..models.errors import error_log
@@ -70,8 +70,17 @@ class DeleteTaskHandler(AdminMethodView):
     @tasks_blp.response(code=200)
     def delete(self, task_id: str):
         """Delete an assigned task"""
-        task: BaseTask = BaseTask.objects.get(id=task_id)
-        task.delete()
+        BaseTask.objects.get(id=task_id).delete()
+
+
+@tasks_blp.route("delete/list/")
+class DeleteTasksListHandler(AdminMethodView):
+
+    @tasks_blp.arguments(TaskIdsList, as_kwargs=True)
+    @tasks_blp.response(code=200)
+    def delete(self, task_ids: List[str]):
+        """Delete an assigned task"""
+        BaseTask.objects(id__in=task_ids).delete()
 
 
 @tasks_blp.route("delete/<task_id>/textgrid/<tg_name>")
@@ -114,6 +123,7 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
         """Returns the annotator's task status, for the annotator task view"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         return task.get_annotator_status(self.user)
+
 
 @tasks_blp.route("/submit/<task_id>")
 class SubmitTaskFileHandler(AnnotatorMethodView):

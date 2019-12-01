@@ -30,6 +30,10 @@ class TaskLockRequest(Schema):
     lock_status = fields.Bool(required=True)
 
 
+class TaskIdsList(Schema):
+    task_ids = fields.List(fields.Str())
+
+
 class TaskShortStatus(Schema):
     id = fields.Str(required=True)
     from .campaigns import CampaignShortProfile

@@ -13,7 +13,6 @@ from mongoengine import (PULL, NULLIFY, signals)
 from ..commons import notif_dispatch
 from ..textgrids import BaseTextGridDocument
 from ..textgrids import LoggedTextGrid
-from ..users import Annotator
 
 
 class TaskComment(EmbeddedDocument):
@@ -84,7 +83,7 @@ class BaseTask(Document):
     @classmethod
     def post_delete_cleanup(cls, sender, document: 'BaseTask', **kwargs):
         """Removing notifications affiliated to that task"""
-        from .users import Notification
+        from ..users import Notification
         Notification.objects(Q(object_id=str(document.id)) & Q(object_type="task"))
 
     @property
@@ -247,6 +246,7 @@ class BaseTask(Document):
             object_id=self.id,
             users=self.campaign.subscribers)
 
+from ..users import Annotator
 signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=BaseTask)
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)
 BaseTask.register_delete_rule(BaseTextGridDocument, 'task', NULLIFY)

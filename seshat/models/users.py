@@ -138,7 +138,8 @@ class Annotator(User):
         pass
 
 
-from .tasks import SingleAnnotatorTask, DoubleAnnotatorTask
+from .tasks.single import SingleAnnotatorTask
+from .tasks.double import DoubleAnnotatorTask
 Notification.register_delete_rule(User, 'pending_notifications', PULL)
 Annotator.register_delete_rule(SingleAnnotatorTask, 'annotator', CASCADE)
 Annotator.register_delete_rule(DoubleAnnotatorTask, 'reference', CASCADE)
