@@ -229,7 +229,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
     def check_times_merging(self):
         """Checks that paired tiers can be merged together. Outputs the partially merged textgrid as
         well as the merge conflicts."""
-        from .tasks import MergeResults
+        from .tasks.double import MergeResults
         merged_times_tg = TextGrid(
             name=self.textgrid.name,
             maxTime=self.textgrid.maxTime,
@@ -285,7 +285,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
 
     @classmethod
     def merge_tiers(cls, tier_a: IntervalTier, tier_b: IntervalTier) -> Tuple[IntervalTier, 'TierMerge']:
-        from .tasks import TierMerge, FrontierMerge
+        from .tasks.double import TierMerge, FrontierMerge
         new_tier = deepcopy(tier_a)
         frontiers_a = cls.to_frontiers(new_tier)
         frontiers_b = cls.to_frontiers(tier_b)

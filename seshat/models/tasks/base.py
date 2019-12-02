@@ -223,7 +223,7 @@ class BaseTask(Document):
             message="You were assigned new tasks on campaign %s" % campaign.name,
             notif_type="assignment",
             object_type="dashboard",
-            object_id=None,
+            object_id=campaign.slug,
             users=annotators)
 
     def notify_comment(self, commenter: 'User'):

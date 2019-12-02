@@ -62,7 +62,7 @@ class Campaign(Document):
         for task in document.tasks:
             task.delete()
         from .users import Notification
-        Notification.objects(Q(object_id=document.slug) & Q(object_type="campaign"))
+        Notification.objects(Q(object_id=document.slug) & (Q(object_type="campaign") | Q(object_type="dashboard")))
 
     def tasks_for_file(self, audio_file: str):
         tasks = [task for task in self.tasks]

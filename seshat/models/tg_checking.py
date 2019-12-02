@@ -5,7 +5,7 @@ from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanFie
     EmbeddedDocument
 from textgrid import IntervalTier, TextGrid
 
-from seshat.models.errors import error_log
+from .errors import error_log
 from ..parsers import parser_factory
 from ..parsers.base import CategoricalChecker, AnnotationError, AnnotationChecker
 
