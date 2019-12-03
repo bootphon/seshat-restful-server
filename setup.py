@@ -39,7 +39,7 @@ setup(
             'change-password = seshat.cli_apps.check_password:main',
             'check-parser = seshat.cli_apps.check_parser:main',
             'check-corpus = seshat.cli_apps.check_corpus:main',
-            'create-annotator = seshat.cli_apps.create_annotator:main',
+            'add-annotator = seshat.cli_apps.add_annotator:main',
             'delete-annotator = seshat.cli_apps.delete_annotator:main',
             'campaign-gamma = seshat.cli_apps.campaign_gamma:main',
             'assign-task = seshat.cli_apps.assign_task:main',
