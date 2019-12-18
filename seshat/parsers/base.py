@@ -5,7 +5,7 @@ class AnnotationError(Exception):
     pass
 
 
-class AnnotationChecker:
+class AnnotationChecker(abc.ABC):
 
     @abc.abstractmethod
     def check_annotation(self, annot: str) -> None:

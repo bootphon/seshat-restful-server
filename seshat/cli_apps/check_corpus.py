@@ -1,13 +1,30 @@
 from pathlib import Path
 
+from mongoengine import DoesNotExist
+
 from seshat.configs import set_up_db, BaseConfig
 from .commons import argparser
 
-from seshat.utils import list_corpus_csv, list_subdirs
 from seshat.models import Campaign
+from seshat.models import BaseCorpus, CSVCorpus, FolderCorpus
 
-argparser.add_argument("-d", "--corpus", type=str, help="Name of the corpus")
-argparser.add_argument("-l", "--list", action="store_true", help="List all available corpus")
+commands = argparser.add_mutually_exclusive_group("commands")
+commands.add_argument("-d", "--corpus", type=str, help="Name of the corpus, lists files found in that corpus")
+commands.add_argument("-c", "--campaign", type=str, help="Campaign slug, lists files for that campaign's corpus")
+commands.add_argument("-l", "--list", action="store_true", help="List all available corpus")
+commands.add_argument("-u", "--update", action="store_true", help="Update the list of corpora")
+
+# TODO : list campaigns for that corpus
+# TODO : update files for a given corpus
+
+
+def list_corpus_files(corpus: BaseCorpus):
+    print(f"Files found for corpus {corpus.name}")
+    for file in corpus.files:
+        if file.is_valid:
+            print(f"\t- \"{corpus.name}\" ({corpus.CORPUS_TYPE}) : {corpus.files_count} files")
+        else:
+            pass
 
 
 def main():
@@ -17,14 +34,52 @@ def main():
 
     if args.list:
         print("Detected Coropora:")
-        for corpus in list_subdirs(Path(args.config.CAMPAIGNS_FILES_ROOT)):
-            print("\t- %s (Audio Folder)" % corpus)
-        for corpus in list_corpus_csv(Path(args.config.CAMPAIGNS_FILES_ROOT)):
-            print("\t- %s (CSV)" % corpus)
+        if args.update:
+            found_corpora = BaseCorpus.populate_corpora()
+            # TODO : maybe just retrieve only the paths using a filter
+            known_corpora_paths = set(corpus.name for corpus in BaseCorpus.objects)
+            # if the corpus isn't already in the DB, populate its audio files,
+            # and save it
+            for corpus in found_corpora:
+                if corpus.name not in known_corpora_paths:
+                    corpus.populate_audio_files()
+                    corpus.save()
+
+            # cleaning up deleted corpora not referenced by any campaign
+            for corpus in BaseCorpus.objects:
+                if corpus.exists:
+                    continue
+
+                campaigns_with_corpus = Campaign.objects(corpus=corpus).count()
+                if campaigns_with_corpus == 0:
+                    corpus.delete()
+
+        for corpus in BaseCorpus.objects:
+            print(f"\t- \"{corpus.name}\" ({corpus.CORPUS_TYPE}) : {corpus.files_count} files")
+
     elif args.corpus:
-        corpus_path = Path(config.CAMPAIGNS_FILES_ROOT) / Path(args.corpus)
-        authorized_extension = config.SUPPORTED_AUDIO_EXTENSIONS
-        # TODO
+        try:
+            corpus: BaseCorpus = BaseCorpus.objects.get(name=args.corpus)
+        except DoesNotExist:
+            print("Corpus name does not exist")
+            return
+        if args.corpus:
+            corpus.populate_audio_files()
+            corpus.save()
+
+        list_corpus_files(corpus)
+
+    elif args.campaign:
+        try:
+            campaign: Campaign = Campaign.objects.get(name=args.corpus)
+        except DoesNotExist:
+            print(f"Campaign with slug {args.campaign} does not exist")
+            return
+        if args.corpus:
+            campaign.corpus.populate_audio_files()
+            campaign.corpus.save()
+
+        list_corpus_files(campaign.corpus)
 
 
 if __name__ == "__main__":
