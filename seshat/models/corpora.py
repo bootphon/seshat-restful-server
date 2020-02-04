@@ -137,7 +137,7 @@ class FolderCorpus(BaseCorpus):
             except ValueError:
                 is_valid = False
                 duration = 0.0
-                error_msg = f"Ignored because Seshat couldn't convert ffprobe output \"${ffprobe_output}\" to float"
+                error_msg = f"Ignored because Seshat couldn't convert ffprobe output \"{ffprobe_output}\" to float"
 
             filename = str(Path(*filepath.parts[1:]))
             self.files.append(AudioFile(filename=filename, duration=duration, error_msg=error_msg, is_valid=is_valid))
@@ -153,9 +153,9 @@ class CSVCorpus(BaseCorpus):
     def populate_audio_files(self):
         self.files = []
         with open(str(self.real_corpus_path), "r") as csv_data_file:
-            reader = DictReader(csv_data_file)
+            reader = DictReader(csv_data_file, skipinitialspace=True)
             if not set(reader.fieldnames) == {"filename", "duration"}:
-                logging.warning(f"The CSV corpora file ${self.name} doesn't "
+                logging.warning(f"The CSV corpora file {self.name} doesn't "
                                 f"have the right headers (filename and duration)")
                 return
 
@@ -166,14 +166,19 @@ class CSVCorpus(BaseCorpus):
                     error_msg = None
 
                 except ValueError:
-                    duration = 0.0,
-                    is_valid = False,
+                    duration = 0.0
+                    is_valid = False
                     error_msg = "Ignored because duration is not a valid float"
+                else:
+                    if not row["filename"].strip():
+                        duration = 0.0
+                        is_valid = False
+                        error_msg = "Filename is empty"
 
-                if not duration:
-                    duration = 0.0,
-                    is_valid = False,
-                    error_msg = "Ignored because duration is 0 seconds"
+                    elif not duration:
+                        duration = 0.0
+                        is_valid = False
+                        error_msg = "Ignored because duration is 0 seconds"
 
                 self.files.append(AudioFile(filename=row["filename"],
                                             duration=duration,

@@ -29,6 +29,8 @@ class TierScheme(EmbeddedDocument):
                 error_log.log_structural("The parser for tier %s couldn't be found, this tier couldn't be checked. "
                                          "Relay this error to your campaign manager to fix it." % tier.name)
                 return
+            if annot.mark.strip() == "":
+                continue
             try:
                 self.parser.check_annotation(annot.mark)
             except AnnotationError as e:
@@ -47,8 +49,9 @@ class UnCheckedTier(TierScheme):
     CHECKING_TYPE = "NONE"
 
     def check_tier(self, tier: IntervalTier):
-        pass
-
+        for i, annot in enumerate(tier):
+            if not self.allow_empty and annot.mark.strip() == "":
+                error_log.log_annot(tier.name, i, annot, "Empty annotations are not authorized in this tier")
 
 
 class CategoricalTier(TierScheme):
