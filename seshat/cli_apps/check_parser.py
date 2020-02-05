@@ -54,27 +54,27 @@ def main():
         if parse_fn is None:
             print("ERROR: the 'check_annotation' method couldn't be found on that parser")
         else:
-            print("Detected 'check_annotation' method")
+            print("✓ Detected 'check_annotation' method")
             parse_sig = signature(parse_fn)
             if len(parse_sig.parameters) != 2:
                 print(f"WARNING: the 'check_annotation' method should have only one parameters, "
                       f"found {len(parse_sig.parameters)} parameters")
             else:
-                print("Detected 1 parameter for 'check_annotation' (as it should be).")
-                print("'check_annotation' method seems to be valid")
+                print("✓ Detected 1 parameter for 'check_annotation' (as it should be).")
+                print("✓ 'check_annotation' method seems to be valid")
 
         if distance_fn is None:
             print("WARNING: 'distance' method couldn't be found. This means no inter-rater agreement can be computed "
                   "for Tiers checked with this parser")
         else:
-            print("Detected a 'distance' method")
+            print("✓ Detected a 'distance' method")
             distance_sig = signature(distance_fn)
             if len(distance_sig.parameters) != 3:
                 print(f"WARNING: the 'distance' method should have exactly 2 parameters, "
                       f"found {len(distance_sig.parameters)} parameters")
             else:
-                print("Detected 2 parameters for 'distance' (as it should be).")
-                print("The 'distance' method seems to be valid")
+                print("✓ Detected 2 parameters for 'distance' (as it should be).")
+                print("✓ The 'distance' method seems to be valid")
 
         # TODO : use default annotations to check
 

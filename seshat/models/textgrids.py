@@ -28,7 +28,7 @@ class BaseTextGridDocument(Document):
         self._textgrid_obj: TextGrid = None
 
     @classmethod
-    def from_textgrid(cls, tg: Union[TextGrid,str],
+    def from_textgrid(cls, tg: Union[TextGrid, str],
                       creators: List['Annotator'],
                       task: 'BaseTask'):
         if task is not None:
@@ -165,7 +165,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             error_log.structural("The names of some of the tiers in the reference and target textgrids don't match")
             return
 
-         # TODO : add support for empty tiers deletion
+        #  TODO : add support for empty tiers deletion
         assert ref_tg.task == target_tg.task
         merged_tg = TextGrid(name=ref_tg.textgrid.name,
                              minTime=ref_tg.textgrid.minTime,
@@ -324,7 +324,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
         return new_tg, merge_results
 
     def check_annotations(self):
-        # getting only validated tiers
+        #  getting only validated tiers
         validated_tiers = set(self.checking_scheme.all_tiers_names)
         for tier_name in self.textgrid.getNames():
             # removing suffix from tier, and if that radical isn't defined in the scheme, ignore it
@@ -356,4 +356,3 @@ class MergedTimesTextGrid(MergedAnnotsTextGrid):
             self.check_annotations()
         self.check_annotations_matching()
         self.check_times_merging()
-

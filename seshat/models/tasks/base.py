@@ -227,7 +227,7 @@ class BaseTask(Document):
             users=annotators)
 
     def notify_comment(self, commenter: 'User'):
-        from .users import User
+        from ..users import User
         notified_users: List[User] = self.annotators + self.campaign.subscribers
         notified_users.remove(commenter)
         notif_dispatch(
