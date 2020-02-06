@@ -96,7 +96,7 @@ class SingleAnnotatorTextGrid(BaseTextGridDocument):
         required_tiers = set(self.checking_scheme.required_tiers_names)
         missing_tiers = required_tiers - set(self.textgrid.getNames())
         if missing_tiers:
-            error_log.structural("The tiers %s are missing in the TextGrid file" % " ,".join(missing_tiers))
+            error_log.log_structural("The tiers %s are missing in the TextGrid file" % ", ".join(missing_tiers))
 
         # removing all tiers that are referenced in the scheme
         tg_tier_names -= set(self.checking_scheme.all_tiers_names)
