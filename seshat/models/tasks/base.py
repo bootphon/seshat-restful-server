@@ -243,7 +243,7 @@ class BaseTask(Document):
             message="The annotation task on file %s is done" % self.data_file,
             notif_type="finished",
             object_type="task",
-            object_id=self.id,
+            object_id=str(self.id),
             users=self.campaign.subscribers)
 
 from ..users import Annotator
