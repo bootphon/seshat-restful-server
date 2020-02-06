@@ -115,6 +115,7 @@ class ErrorsLog:
 
     def to_errors_summary(self):
         return {
+            "has_errors": self.has_errors,
             "structural": [error.to_msg() for error in self.structural],
             "annot_mismatch": [error.to_msg() for error in self.mismatch],
             "time_conflict": [error.to_msg() for error in self.timing],

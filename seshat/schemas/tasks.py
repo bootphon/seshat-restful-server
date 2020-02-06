@@ -48,6 +48,7 @@ class TaskShortStatus(Schema):
     step = fields.Str(required=True)
     is_locked = fields.Bool(required=True)
     is_done = fields.Bool(required=True)
+    finish_time = fields.DateTime()
 
 
 class TaskTextGrid(Schema):
@@ -136,6 +137,7 @@ class AnnotMismatchError(Schema):
 
 
 class TextGridErrors(Schema):
+    has_errors = fields.Bool(required=True)
     structural = fields.List(fields.Nested(StructuralError))
     annot_mismatch = fields.List(fields.Nested(AnnotMismatchError))
     time_conflict = fields.List(fields.Nested(TimeMergeError))

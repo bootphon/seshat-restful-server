@@ -92,7 +92,7 @@ class BaseTask(Document):
 
     @property
     def has_started(self):
-        return len(self.file_downloads) > 0
+        return len(self.file_downloads) > 0 or len(self.file_uploads) > 0
 
     @property
     def name(self):
@@ -168,7 +168,8 @@ class BaseTask(Document):
             "creation_time": self.creation_time,
             "step": self.steps_names[self.current_step],
             "is_locked": self.is_locked,
-            "is_done": self.is_done
+            "is_done": self.is_done,
+            "finish_time": self.finish_time
         }
 
     @property

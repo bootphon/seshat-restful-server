@@ -139,7 +139,10 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
             return abort(403, message="Cannot upload file for this task, at this step.")
         error_log.flush()
         task.submit_textgrid(textgrid_str, self.user)
-        return error_log.to_errors_summary()
+        if error_log.has_errors:
+            return error_log.to_errors_summary()
+        else:
+            return 200
 
 
 @tasks_blp.route("/validate/<task_id>")

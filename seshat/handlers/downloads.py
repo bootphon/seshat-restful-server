@@ -69,7 +69,7 @@ class TaskTextGridListDownload(AdminMethodView):
         try:
             if isinstance(task.files[file_name], BaseTextGridDocument):
                 data = task.files[file_name].textgrid_file.read()
-                filename = "%s_%s.TextGrid" % (task.name, file_name)
+                filename = f"{task.name}_{file_name}.TextGrid"
             else:
                 return abort(404, message="Textgrid hasn't been completed yet")
         except KeyError:
