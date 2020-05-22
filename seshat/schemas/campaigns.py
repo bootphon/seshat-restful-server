@@ -34,11 +34,16 @@ class CampaignCreation(Schema):
     enable_audio_dl = fields.Bool(required=True)
     check_textgrids = fields.Bool(default=True)
     checking_scheme = fields.List(fields.Nested(TierSpecifications))
+    # Used when "importing" a TCS from another campaign
+    checking_scheme_id = fields.Str()
 
     @validates_schema
     def validate_data_fields(self, data, **kwargs):
-         if data.get("data_csv") is not None and data.get("data_folder") is not None:
-             raise ValidationError("Data has to be either CSV or a folder but not both")
+        if data.get("data_csv") is not None and data.get("data_folder") is not None:
+            raise ValidationError("Data has to be either CSV or a folder but not both")
+        if not data.get("checking_scheme") and not data.get("checking_scheme_id"):
+            raise ValidationError("A Checking scheme or a checking scheme ID has to be specified")
+
 
 
 class CampaignSlug(Schema):

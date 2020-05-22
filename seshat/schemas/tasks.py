@@ -143,3 +143,4 @@ class TextGridErrors(Schema):
     time_conflict = fields.List(fields.Nested(TimeMergeError))
     annot = fields.Dict(keys=fields.Str(),
                         values=fields.List(fields.Nested(AnnotationError)))
+    total_error_count = fields.Int()

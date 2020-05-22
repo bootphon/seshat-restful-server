@@ -109,9 +109,13 @@ class ErrorsLog:
         self.timing = list()
 
     @property
+    def total_errors(self) -> int:
+        return (len(self.structural) + len(self.annot) +
+                len(self.mismatch) + len(self.timing))
+
+    @property
     def has_errors(self) -> bool:
-        return any(bool(collection) for collection
-                   in [self.structural, self.annot, self.mismatch, self.timing])
+        return bool(self.total_errors)
 
     def to_errors_summary(self):
         return {
@@ -120,7 +124,8 @@ class ErrorsLog:
             "annot_mismatch": [error.to_msg() for error in self.mismatch],
             "time_conflict": [error.to_msg() for error in self.timing],
             "annot": {tier: [error.to_msg() for error in errors]
-                      for tier, errors in self.annot.items()}
+                      for tier, errors in self.annot.items()},
+            "total_error_count": self.total_errors
         }
 
 

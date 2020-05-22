@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import slugify
 from flask_smorest import Blueprint, abort
@@ -40,20 +40,23 @@ class CampaignAdminHandler(AdminMethodView):
     def post(self, args: Dict):
         """Creates a new campaign"""
         if args["check_textgrids"]:
-            try:
-                checking_scheme: TextGridCheckingScheme = TextGridCheckingScheme.from_tierspecs_schema(
-                    scheme_data=args["checking_scheme"],
-                    scheme_name=args["name"])
-                checking_scheme.validate()
-            except ValidationError as e:
-                return abort(403, message="Invalid tier specifications : %s" % str(e))
+            if args.get("checking_scheme_id") is not None:
+                checking_scheme = TextGridCheckingScheme.objects.get(args["checking_scheme_id"])
+            else:
+                try:
+                    checking_scheme = TextGridCheckingScheme.from_tierspecs_schema(
+                        scheme_data=args["checking_scheme"],
+                        scheme_name=args["name"])
+                    checking_scheme.validate()
+                except ValidationError as e:
+                    return abort(403, message="Invalid tier specifications : %s" % str(e))
         else:
             checking_scheme = None
 
         try:
             corpus: BaseCorpus = BaseCorpus.objects.get(name=args["corpus"])
             campaign_slug = slugify.slugify(args["name"])
-            wiki_page = "# %s's wiki page\n\nNothing for now..." % args["name"]
+            wiki_page = f"# {args['name']}'s wiki page\n\nNothing for now..."
             new_campaign = Campaign(name=args["name"],
                                     slug=campaign_slug,
                                     description=args["description"],
@@ -74,7 +77,7 @@ class CampaignAdminHandler(AdminMethodView):
         except NotUniqueError as err:
             abort(403, message="The campaign name is too close to another campaign name")
         except ValidationError as e:
-            abort(403, "Invalid campaign specifications : %s" % str(e))
+            abort(403, f"Invalid campaign specifications : {str(e)}")
 
     @campaigns_blp.arguments(CampaignSlug, as_kwargs=True)
     @campaigns_blp.response(code=200)
@@ -175,12 +178,23 @@ class CampaignCheckingScheme(LoggedInMethodView):
             return # nothing is returned
 
 
+@campaigns_blp.route("/checking_scheme/list")
+class CampaignCheckingScheme(LoggedInMethodView):
+
+    @campaigns_blp.response(CheckingSchemeSummary(many=True))
+    @campaigns_blp.response(code=200)
+    def get(self):
+        for campaign in Campaign.objects:
+            if campaign.check_textgrids and campaign.checking_scheme is not None:
+                yield campaign.checking_scheme.summary
+
+
 @campaigns_blp.route("/quickcheck/<campaign_slug>")
 class ParsedTierQuickCheck(LoggedInMethodView):
 
     @campaigns_blp.arguments(TierQuickCheck, as_kwargs=True)
     @campaigns_blp.response(QuickCheckResponse)
-    def get(self, campaign_slug: str, tier_name: str, annotation: str):
+    def post(self, campaign_slug: str, tier_name: str, annotation: str):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         if not campaign.check_textgrids:
             abort(403, message="No checking scheme for that campaign")
