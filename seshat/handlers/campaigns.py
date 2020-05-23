@@ -73,6 +73,7 @@ class CampaignAdminHandler(AdminMethodView):
                 checking_scheme.save()
             new_campaign.checking_scheme = checking_scheme
             new_campaign.save()
+            new_campaign.update_stats()
             return {"slug": new_campaign.slug}
         except NotUniqueError as err:
             abort(403, message="The campaign name is too close to another campaign name")
@@ -134,6 +135,15 @@ class WikiUpdateHandler(AdminMethodView):
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         campaign.wiki_page = content
         campaign.save()
+
+
+@campaigns_blp.route("gamma/update/<campaign_slug>")
+class UpdateGammaHandler(LoggedInMethodView):
+
+    def post(self, campaign_slug: str):
+        """Launch a campaign's gamma computation"""
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        campaign.launch_gamma_update()
 
 
 @campaigns_blp.route("wiki/view/<campaign_slug>")

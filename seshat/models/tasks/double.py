@@ -3,8 +3,9 @@ from enum import Enum
 from typing import Dict, Optional
 
 from mongoengine import EmbeddedDocument, FloatField, IntField, BooleanField, StringField, EmbeddedDocumentListField, \
-    ReferenceField, EmbeddedDocumentField
+    ReferenceField, EmbeddedDocumentField, MapField
 
+from .. import DoubleAnnotatorTextGrid
 from ..textgrids import MergedAnnotsTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid, MergedTimesTextGrid
 from ..commons import notif_dispatch
 from ..errors import MergeConflictsError, error_log
@@ -46,18 +47,21 @@ class DoubleAnnotatorTask(BaseTask):
     reference = ReferenceField('Annotator', required=True)
     target = ReferenceField('Annotator', required=True)
     # fully annotated textgrid from the ref annotator
-    ref_tg = StringField()
+    ref_tg = ReferenceField(BaseTextGridDocument)
     # fully annotated textgrid from the target annotator
-    target_tg = StringField()
+    target_tg = ReferenceField(BaseTextGridDocument)
     # target and ref annotated tg's stacked one onto another, for annotation
     # merging
-    merged_tg = StringField()
+    merged_tg: MergedAnnotsTextGrid = ReferenceField(MergedAnnotsTextGrid)
     times_conflicts = EmbeddedDocumentField(MergeResults)
     # target and ref still stacked, but all annotations are the same
-    merged_annots_tg = StringField()
+    merged_annots_tg: MergedAnnotsTextGrid = ReferenceField(MergedAnnotsTextGrid)
     # times that could be merged automatically are merged, annotators have to
     # agree on frontiers that are too "far away" from each other
-    merged_times_tg = StringField()
+    merged_times_tg: MergedTimesTextGrid = ReferenceField(MergedTimesTextGrid)
+
+    # gamma values for each tier.
+    tiers_gamma: Dict[str, float] = MapField(FloatField)
 
     class Steps(Enum):
         PENDING = 0
@@ -190,12 +194,15 @@ class DoubleAnnotatorTask(BaseTask):
     def allow_starter_zip_dl(self) -> bool:
         return self.current_step in (self.Steps.PARALLEL, self.Steps.PENDING, self.Steps.TIERS_AGREEMENT)
 
+    @property
+    def can_compute_gamma(self) -> bool:
+        return self.current_step.value >= self.Steps.MERGING_ANNOTS.value
+
     def allow_file_upload(self, annotator: 'Annotator') -> bool:
         if annotator == self.reference:
             return True
         elif annotator == self.target:
             return self.current_step in (self.Steps.PENDING, self.Steps.PARALLEL, self.Steps.TIERS_AGREEMENT)
-
 
     def current_tg_template(self, user: 'Annotator') -> str:
         if self.merged_tg is None:
@@ -232,7 +239,7 @@ class DoubleAnnotatorTask(BaseTask):
     def process_ref(self, textgrid: str):
         """Handles the submission of a textgrid sent by the reference annotator"""
         if self.merged_tg is None:
-            # it's a completed textgrid
+            # it's a completed single-annotator textgrid
             tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.reference], self)
             tg.check()
             if not error_log.has_errors:
@@ -243,17 +250,8 @@ class DoubleAnnotatorTask(BaseTask):
                     if not error_log.has_errors:
                         self.merged_tg = merged_tg
                         self.notify_merged_ready(self.target)
-
-        elif self.merged_tg is None and self.target_tg is not None:
-            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.reference], self)
-            tg.check()
-            if not error_log.has_errors:
-                self.ref_tg = tg
-                error_log.flush()
-                merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
-                if not error_log.flush():
-                    self.merged_tg = merged_tg
-                    self.notify_merged_ready(self.target)
+                        self.tiers_gamma = None
+                        self.campaign.update_stats(gamma_only=True)
 
         elif self.merged_annots_tg is None:
             # processing the merged annots textgrid
@@ -263,8 +261,8 @@ class DoubleAnnotatorTask(BaseTask):
                 self.merged_annots_tg = tg
                 merged_times_tg, self.times_conflicts = tg.gen_merged_times()
                 self.merged_times_tg = MergedTimesTextGrid.from_textgrid(merged_times_tg,
-                                                                             self.annotators,
-                                                                             self)
+                                                                         self.annotators,
+                                                                         self)
 
         else:
             tg = MergedTimesTextGrid.from_textgrid(textgrid, self.annotators, self)
@@ -274,7 +272,9 @@ class DoubleAnnotatorTask(BaseTask):
                 self.final_tg = SingleAnnotatorTextGrid.from_textgrid(final_tg, self.annotators, self)
                 self.is_done = True
                 self.finish_time = datetime.now()
-                self.notify_done()
+                if self.final_tg is None:
+                    self.notify_done()
+                    self.campaign.update_stats()
 
     def process_target(self, textgrid: str):
         """Handles the submission of a textgrid sent by the target annotator"""
@@ -290,17 +290,9 @@ class DoubleAnnotatorTask(BaseTask):
                     if not error_log.has_errors:
                         self.merged_tg = merged_tg
                         self.notify_merged_ready(self.reference)
+                        self.tiers_gamma = None
+                        self.campaign.update_stats(gamma_only=True)
 
-        elif self.merged_tg is None and self.reference is not None:
-            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, [self.target_tg], self)
-            tg.check()
-            if not error_log.has_errors:
-                self.ref_tg = tg
-                error_log.flush()
-                merged_tg = MergedAnnotsTextGrid.from_ref_and_target(self.ref_tg, self.target_tg)
-                if not error_log.flush():
-                    self.merged_tg = merged_tg
-                    self.notify_merged_ready(self.reference)
 
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
@@ -344,3 +336,6 @@ class DoubleAnnotatorTask(BaseTask):
 
         tg.check()
         self._log_upload(textgrid, annotator, not error_log.has_errors)
+
+    def compute_gamma(self):
+        pass

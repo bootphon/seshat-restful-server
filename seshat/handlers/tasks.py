@@ -59,6 +59,7 @@ class AssignTasksHandler(AdminMethodView):
             for user in annotators.values():
                 user.assigned_tasks.append(new_task)
         task_class.notify_assign(list(annotators.values()), campaign)
+        campaign.update_stats()
         campaign.save()
         for user in annotators.values():
             user.save()

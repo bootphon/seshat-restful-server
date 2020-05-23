@@ -71,7 +71,9 @@ class SingleAnnotatorTask(BaseTask):
             self.final_tg = tg
             self.is_done = True
             self.finish_time = datetime.now()
-            self.notify_done()
+            if self.final_tg is None:
+                self.notify_done()
+                self.campaign.update_stats()
 
         self.cascade_save()
         self._log_upload(textgrid, annotator, not error_log.has_errors)

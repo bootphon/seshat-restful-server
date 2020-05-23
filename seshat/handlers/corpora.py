@@ -71,3 +71,8 @@ class RefreshCorpusListingHandler(AdminMethodView):
         corpus: BaseCorpus = BaseCorpus.objects.get(name=corpus_name)
         corpus.populate_audio_files()
         corpus.save()
+
+        # telling all the campaigns that reference that corpus to update their
+        # stats, in case files were added/removed
+        for campaign in Campaign.objects(corpus=corpus):
+            campaign.update_stats()

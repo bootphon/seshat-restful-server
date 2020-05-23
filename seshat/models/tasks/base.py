@@ -84,7 +84,12 @@ class BaseTask(Document):
     def post_delete_cleanup(cls, sender, document: 'BaseTask', **kwargs):
         """Removing notifications affiliated to that task"""
         from ..users import Notification
-        Notification.objects(Q(object_id=str(document.id)) & Q(object_type="task"))
+        Notification.objects(Q(object_id=str(document.id)) & Q(object_type="task")).delete()
+        document.campaign.update_stats()
+
+    def post_save(cls, sender, document: 'BaseTask', **kwargs):
+        #  TODO set up post save that also updates the campaign's last_update
+        document.last_update = datetime.now()
 
     @property
     def annotators(self):
@@ -125,6 +130,8 @@ class BaseTask(Document):
         raise NotImplemented()
 
     def get_starter_zip(self) -> bytes:
+        """Generates a zip file containing the template tg, and optionally
+        the audio file that is to be annotated"""
         buffer = BytesIO()
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
             zip_folder: str = self.name
@@ -213,11 +220,6 @@ class BaseTask(Document):
         self.discussion.append(new_comment)
         self.save()
 
-    def save(self, *args, **kwargs):
-        # TODO set up post save that also updates the campaign's last_update
-        self.last_update = datetime.now()
-        super().save(*args, **kwargs)
-
     @staticmethod
     def notify_assign(annotators: List['Annotator'], campaign: 'Campaign'):
         notif_dispatch(
@@ -247,7 +249,10 @@ class BaseTask(Document):
             object_id=str(self.id),
             users=self.campaign.subscribers)
 
+
 from ..users import Annotator
+
 signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=BaseTask)
+signals.post_save.connect(BaseTask.post_save, sender=BaseTask)
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)
 BaseTask.register_delete_rule(BaseTextGridDocument, 'task', NULLIFY)
