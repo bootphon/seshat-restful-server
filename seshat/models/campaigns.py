@@ -27,10 +27,11 @@ class CampaignStats(EmbeddedDocument):
     completed_tasks = IntField(required=True)
     single_annotator_tasks = IntField(required=True)
     double_annotator_tasks = IntField(required=True)
-    tiers_gamma = MapField(FloatField)
+    tiers_gamma: Dict[str, float] = MapField(FloatField())
     can_update_gamma = BooleanField()
     can_compute_gamma = BooleanField()
-    gamma_updating: Dict[str, float] = BooleanField(default=False)
+    gamma_updating = BooleanField(default=False)
+    annotators = ListField(ReferenceField('Annotator'))
 
     def update_stats(self, campaign: 'Campaign'):
         """Update all statistics for that campaign"""
@@ -42,11 +43,16 @@ class CampaignStats(EmbeddedDocument):
                                            if isinstance(task, SingleAnnotatorTask)])
         self.double_annotator_tasks = len([task for task in campaign.tasks
                                            if isinstance(task, DoubleAnnotatorTask)])
+        all_annotators = set()
+        for task in campaign.tasks:
+            for annotator in task.annotators:
+                all_annotators.add(annotator)
+        self.annotators = list(all_annotators)
         self.update_gamma_stats(campaign)
 
     def update_gamma_stats(self, campaign: 'Campaign'):
-        """Aggregates the gamma statistics for the campaign. Doesn't
-        not actually compute the gamma values"""
+        """Aggregates the gamma statistics for the campaign. Does **NOT**
+        actually compute the gamma values"""
         if campaign.checking_scheme is None:
             # no gamma possible if a checking scheme hasn't been specified
             self.can_update_gamma = False
@@ -57,7 +63,7 @@ class CampaignStats(EmbeddedDocument):
             tiers_gamma: Dict[str, List[float]] = defaultdict(list)
             # this flag can be set if one of the task is ripe
             # for gamma updating
-            self.can_compute_gamma = False
+            self.can_update_gamma = False
             for task in campaign.tasks:
                 if not isinstance(task, DoubleAnnotatorTask):
                     continue
@@ -74,12 +80,15 @@ class CampaignStats(EmbeddedDocument):
             for tier_name, gamma_values in tiers_gamma:
                 self.tiers_gamma[tier_name] = mean(gamma_values)
 
-
     def to_msg(self):
         return {"total_files": self.total_files,
                 "assigned_files": self.assigned_files,
                 "total_tasks": self.total_tasks,
-                "completed_tasks": self.completed_tasks}
+                "completed_tasks": self.completed_tasks,
+                "can_update_gamma": self.can_update_gamma,
+                "can_compute_gamma": self.can_compute_gamma,
+                "gamma_updating": self.gamma_updating,
+                "tiers_gamma": self.tiers_gamma}
 
 
 class Campaign(Document):
@@ -117,6 +126,8 @@ class Campaign(Document):
         self.save()
 
     def update_stats(self, gamma_only=False):
+        if self.stats is None:
+            self.stats = CampaignStats()
         if gamma_only:
             self.stats.update_gamma_stats(self)
         else:
@@ -142,11 +153,7 @@ class Campaign(Document):
 
     @property
     def annotators(self):
-        all_annotators = set()
-        for task in self.tasks:
-            for annotator in task.annotators:
-                all_annotators.add(annotator)
-        return list(all_annotators)
+        return self.stats.annotators
 
     def gen_template_tg(self, filename: str) -> SingleAnnotatorTextGrid:
         """Generates the template textgrid (pregenerated tiers and tg length)
@@ -163,7 +170,7 @@ class Campaign(Document):
         then sent to the client"""
         buffer = BytesIO()
         # TODO: add a summary.csv
-        #   csv should contain (for each tash)
+        #   csv should contain (for each task)
         #   date created, date completed, date started,
         #   annotators, and optionally the gamma for each tier
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
@@ -190,24 +197,22 @@ class Campaign(Document):
 
     @property
     def status(self):
+        if self.stats is None:
+            self.update_stats()
+
         return {
             "slug": self.slug,
             "name": self.name,
             "description": self.description,
             "creator": self.creator.short_profile,
-            # TODO use the stats object when it's completed and rightly updated
-            "stats": {
-                "total_tasks": len(self.tasks),
-                "completed_tasks": len([task for task in self.tasks if task.is_done]),
-                "total_files": self.corpus.files_count,
-                "assigned_files": len(set(task.data_file for task in self.tasks)),
-            },
+            "stats": self.stats.to_msg(),
             "corpus_path": self.corpus.name,
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
             "annotators": [annotator.short_profile for annotator in self.annotators],
             "subscribers": [user.username for user in self.subscribers]
         }
+
 
 signals.post_delete.connect(Campaign.post_delete_cleanup, sender=Campaign)
 BaseTask.register_delete_rule(Campaign, 'tasks', PULL)

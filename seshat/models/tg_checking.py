@@ -1,5 +1,5 @@
 """Schemas that define how a TextGrid should be checked"""
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
     EmbeddedDocument
@@ -44,6 +44,9 @@ class TierScheme(EmbeddedDocument):
             "checking_type": self.CHECKING_TYPE
         }
 
+    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid) -> Optional[float]:
+        raise NotImplemented()
+
 
 class UnCheckedTier(TierScheme):
     CHECKING_TYPE = "NONE"
@@ -52,6 +55,9 @@ class UnCheckedTier(TierScheme):
         for i, annot in enumerate(tier):
             if not self.allow_empty and annot.mark.strip() == "":
                 error_log.log_annot(tier.name, i, annot, "Empty annotations are not authorized in this tier")
+
+    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid):
+        return None
 
 
 class CategoricalTier(TierScheme):
@@ -64,6 +70,9 @@ class CategoricalTier(TierScheme):
 
     def to_specs(self):
         return {**super().to_specs(), "categories": self.categories}
+
+    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid):
+        return 0.5 # TODO
 
 
 class ParsedTier(TierScheme):
@@ -80,6 +89,9 @@ class ParsedTier(TierScheme):
 
     def to_specs(self):
         return {**super().to_specs(), "parser": {"name": self.parser_name, "module": self.parser_module}}
+
+    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid) -> Optional[float]:
+        return 0.6 # TODO
 
 
 class TextGridCheckingScheme(Document):

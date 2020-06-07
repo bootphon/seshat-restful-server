@@ -2,14 +2,14 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional
 
-from mongoengine import EmbeddedDocument, FloatField, IntField, BooleanField, StringField, EmbeddedDocumentListField, \
-    ReferenceField, EmbeddedDocumentField, MapField
+from mongoengine import (EmbeddedDocument, FloatField, IntField, BooleanField, StringField, EmbeddedDocumentListField,
+                         ReferenceField, EmbeddedDocumentField, MapField, signals)
 
-from .. import DoubleAnnotatorTextGrid
-from ..textgrids import MergedAnnotsTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid, MergedTimesTextGrid
 from ..commons import notif_dispatch
 from ..errors import MergeConflictsError, error_log
 from ..tasks.base import BaseTask
+from ..textgrids import MergedAnnotsTextGrid, BaseTextGridDocument, SingleAnnotatorTextGrid, MergedTimesTextGrid
+from ..tg_checking import TextGridCheckingScheme
 
 
 class FrontierMerge(EmbeddedDocument):
@@ -61,7 +61,7 @@ class DoubleAnnotatorTask(BaseTask):
     merged_times_tg: MergedTimesTextGrid = ReferenceField(MergedTimesTextGrid)
 
     # gamma values for each tier.
-    tiers_gamma: Dict[str, float] = MapField(FloatField)
+    tiers_gamma: Dict[str, float] = MapField(FloatField())
 
     class Steps(Enum):
         PENDING = 0
@@ -293,7 +293,6 @@ class DoubleAnnotatorTask(BaseTask):
                         self.tiers_gamma = None
                         self.campaign.update_stats(gamma_only=True)
 
-
     def submit_textgrid(self, textgrid: str, annotator: 'Annotator'):
         if self.is_locked:
             return
@@ -338,4 +337,23 @@ class DoubleAnnotatorTask(BaseTask):
         self._log_upload(textgrid, annotator, not error_log.has_errors)
 
     def compute_gamma(self):
-        pass
+        checking_scheme: TextGridCheckingScheme = self.campaign.checking_scheme
+        self.tiers_gamma = {}
+        for tier_name, tier_scheme in checking_scheme.tiers_specs.items():
+            try:
+                gamma_val = tier_scheme.compute_gamma(self.ref_tg.textgrid,
+                                                      self.target_tg.textgrid)
+            except Exception as err:
+                print(f'Got error "{type(err)} : {str(err)}" on task for file {self.data_file.name}, '
+                      f'while computing gamma for tier {tier_name}.')
+                continue
+            else:
+                if gamma_val is not None:
+                    self.tiers_gamma[tier_name] = gamma_val
+
+        if not self.tiers_gamma:
+            raise ValueError("Couldn't compute gamma for ")
+
+
+signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=DoubleAnnotatorTask)
+signals.post_save.connect(BaseTask.post_save, sender=DoubleAnnotatorTask)

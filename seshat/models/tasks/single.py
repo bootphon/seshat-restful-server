@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Optional
 
-from mongoengine import ReferenceField
+from mongoengine import ReferenceField, signals
 
 from ..textgrids import BaseTextGridDocument, SingleAnnotatorTextGrid
 from ..errors import error_log
@@ -87,3 +87,6 @@ class SingleAnnotatorTask(BaseTask):
 
         tg.check()
         self._log_upload(textgrid, annotator, not error_log.has_errors)
+
+signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=SingleAnnotatorTask)
+signals.post_save.connect(BaseTask.post_save, sender=SingleAnnotatorTask)

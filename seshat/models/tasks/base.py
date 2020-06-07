@@ -87,6 +87,7 @@ class BaseTask(Document):
         Notification.objects(Q(object_id=str(document.id)) & Q(object_type="task")).delete()
         document.campaign.update_stats()
 
+    @classmethod
     def post_save(cls, sender, document: 'BaseTask', **kwargs):
         #  TODO set up post save that also updates the campaign's last_update
         document.last_update = datetime.now()
@@ -252,6 +253,7 @@ class BaseTask(Document):
 
 from ..users import Annotator
 
+# the signals have to registered with child classes as well.
 signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=BaseTask)
 signals.post_save.connect(BaseTask.post_save, sender=BaseTask)
 BaseTask.register_delete_rule(Annotator, 'assigned_tasks', PULL)

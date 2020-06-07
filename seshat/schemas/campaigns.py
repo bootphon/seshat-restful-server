@@ -61,6 +61,10 @@ class CampaignStats(Schema):
     completed_tasks = fields.Int(required=True)
     total_files = fields.Int(required=True)
     assigned_files = fields.Int(required=True)
+    tiers_gamma = fields.Mapping(fields.Str, fields.Float)
+    can_update_gamma = fields.Bool()
+    can_compute_gamma = fields.Bool(required=True)
+    gamma_updating = fields.Bool()
 
 
 class CampaignShortProfile(Schema):
