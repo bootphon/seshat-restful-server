@@ -98,7 +98,7 @@ class DoubleAnnotatorTask(BaseTask):
         You don't have to agree on the timing of those annotations yet."""
 
     TARGET_MERGE_ANNOTS_INSTRUCTIONS = \
-        """Joint the reference annotator now, so you can (together) find an agreement based on 
+        """Join the reference annotator now, so you can (together) find an agreement based on 
         your respective annotations. The merged file is to be edited on the reference annotator's 
         computer."""
 
