@@ -142,7 +142,7 @@ class DoubleAnnotatorTask(BaseTask):
                      % self.data_file),
             notif_type="finished",
             object_type="task",
-            object_id=self.id,
+            object_id=str(self.id),
             users=[annotator])
 
     def current_instructions(self, user: 'Annotator') -> str:
