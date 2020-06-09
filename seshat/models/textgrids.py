@@ -155,9 +155,10 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
         ref_names = sorted(ref_tg.textgrid.getNames())
         target_names = sorted(target_tg.textgrid.getNames())
         if len(ref_names) != len(target_names):
-            error_log.log_structural("The reference and target annotator's textgrids don't have the same amount of Tiers "
-                                 "(%i for the reference, %i for the target)"
-                                 % (len(ref_names), len(target_names)))
+            error_log.log_structural(
+                "The reference and target annotator's textgrids don't have the same amount of Tiers "
+                "(%i for the reference, %i for the target)"
+                % (len(ref_names), len(target_names)))
             return
 
         if ref_names != target_names:
@@ -205,26 +206,28 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
                 error_log.log_structural("The tiers %s are missing" % " ,".join(missing_tiers))
             tier_names_set -= req_tiers_suffixed
 
-        # filtering out valid tiers to weed out potential invalid tiers names
+        # making a list of all valid tier names, and using them to weed out any extra invalid tier name
+        all_tiers_suffixed = set()
+        for suffix in (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX):
+            all_tiers_suffixed |= set(name + suffix for name in set(self.checking_scheme.required_tiers_names))
         tier_names = set(self.textgrid.getNames())
-        all_tiers_suffixed = set(name + suffix for name in set(self.checking_scheme.all_tiers_names))
-        tier_names -= all_tiers_suffixed
-
         # remaining tiers are invalid
         if tier_names:
             error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % ", ".join(tier_names))
-        else:
-            # checking that both top and bottom have the same tiers
-            no_suffix = set(re.sub("(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX), "", name)
-                            for name in self.textgrid.getNames())
-            tier_names_set = set(self.textgrid.getNames())
-            for no_suffix_name in no_suffix:
-                suffixed_top = no_suffix_name + self.TOP_GROUP_SUFFIX
-                suffixed_bottom = no_suffix_name + self.BOTTOM_GROUP_SUFFIX
-                if suffixed_top not in tier_names_set:
-                    error_log.log_structural("The %s tier is missing" % suffixed_top)
-                elif suffixed_bottom not in tier_names_set:
-                    error_log.log_structural("The %s tier is missing" % suffixed_bottom)
+            return
+
+        # from here, we can assume all tier names are of the form tier-(ref|target)
+        # checking that both top and bottom have the same tiers
+        no_suffix = set(re.sub("(%s|%s)" % (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX), "", name)
+                        for name in self.textgrid.getNames())
+        tier_names_set = set(self.textgrid.getNames())
+        for no_suffix_name in no_suffix:
+            suffixed_top = no_suffix_name + self.TOP_GROUP_SUFFIX
+            suffixed_bottom = no_suffix_name + self.BOTTOM_GROUP_SUFFIX
+            if suffixed_top not in tier_names_set:
+                error_log.log_structural("The %s tier is missing" % suffixed_top)
+            elif suffixed_bottom not in tier_names_set:
+                error_log.log_structural("The %s tier is missing" % suffixed_bottom)
 
     def check_times_merging(self):
         """Checks that paired tiers can be merged together. Outputs the partially merged textgrid as
