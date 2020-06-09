@@ -210,7 +210,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
         all_tiers_suffixed = set()
         for suffix in (self.TOP_GROUP_SUFFIX, self.BOTTOM_GROUP_SUFFIX):
             all_tiers_suffixed |= set(name + suffix for name in set(self.checking_scheme.required_tiers_names))
-        tier_names = set(self.textgrid.getNames())
+        tier_names = set(self.textgrid.getNames()) - all_tiers_suffixed
         # remaining tiers are invalid
         if tier_names:
             error_log.log_structural("The tiers %s are unexpected (and thus invalid)" % ", ".join(tier_names))
