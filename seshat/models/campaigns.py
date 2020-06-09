@@ -1,8 +1,9 @@
+import csv
 import subprocess
 import zipfile
 from collections import defaultdict
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from pathlib import Path
 from statistics import mean
 from typing import Dict, List
@@ -164,6 +165,35 @@ class Campaign(Document):
         else:
             tg = self.checking_scheme.gen_template_tg(audio_file.duration, filename)
         return SingleAnnotatorTextGrid.from_textgrid(tg, [self.creator], None)
+
+    def gen_summary_csv(self) -> str:
+        str_io = StringIO()
+        fields = ["task_file", "time_created", "time_completed", "time_started",
+                  "annotators"]
+        if self.stats is not None and self.stats.can_compute_gamma:
+            write_gamma = True
+            for tier_name in self.stats.tiers_gamma.keys():
+                fields.append(f"gamma_{tier_name}")
+        else:
+            write_gamma = False
+
+        csv_writer = csv.DictWriter(str_io, fields, delimiter="\t")
+        csv_writer.writeheader()
+        for task in self.tasks:
+            task: BaseTask
+            task_row = {
+                "task_file" : task.data_file,
+                "time_created": task.creation_time,
+                "time_completed": task.finish_time,
+                "time_started": task.start_time,
+                "annotators": ",".join(annotator.username for annotator in task.annotators)
+            }
+            if isinstance(task, DoubleAnnotatorTask) and write_gamma:
+                for tier_name, gamma in task.tiers_gamma.items():
+                    task_row[f"gamma_{tier_name}"] = gamma
+            csv_writer.writerow(task_row)
+        str_io.flush()
+        return str_io.getvalue()
 
     def get_full_annots_archive(self) -> bytes:
         """Generates the full annotations zip archive for that campaign, to be

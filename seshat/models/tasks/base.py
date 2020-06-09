@@ -51,8 +51,8 @@ class BaseTask(Document):
     data_file = StringField(required=True)
     discussion = EmbeddedDocumentListField(TaskComment)
     deadline = DateField()
-    file_downloads = EmbeddedDocumentListField(FileDownload)
-    file_uploads = EmbeddedDocumentListField(FileUpload)
+    file_downloads: List[FileDownload] = EmbeddedDocumentListField(FileDownload)
+    file_uploads: List[FileUpload] = EmbeddedDocumentListField(FileUpload)
 
     # Only contains one Tier ("Task")  of the audio file's length
     # with nothing in it.
@@ -99,6 +99,12 @@ class BaseTask(Document):
     @property
     def has_started(self):
         return len(self.file_downloads) > 0 or len(self.file_uploads) > 0
+
+    @property
+    def start_time(self) -> Optional[datetime]:
+        """Time of the first file download of a tasks's file, ergo, the
+        estimated start time of the task"""
+        return self.file_downloads[0].time if self.file_downloads else None
 
     @property
     def name(self):

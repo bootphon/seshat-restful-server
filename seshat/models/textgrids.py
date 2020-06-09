@@ -155,14 +155,14 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
         ref_names = sorted(ref_tg.textgrid.getNames())
         target_names = sorted(target_tg.textgrid.getNames())
         if len(ref_names) != len(target_names):
-            error_log.structural("The reference and target annotator's textgrids don't have the same amount of Tiers "
+            error_log.log_structural("The reference and target annotator's textgrids don't have the same amount of Tiers "
                                  "(%i for the reference, %i for the target)"
                                  % (len(ref_names), len(target_names)))
             return
 
         if ref_names != target_names:
             # TODO: maybe make this more helpful
-            error_log.structural("The names of some of the tiers in the reference and target textgrids don't match")
+            error_log.log_structural("The names of some of the tiers in the reference and target textgrids don't match")
             return
 
         #  TODO : add support for empty tiers deletion
@@ -202,7 +202,7 @@ class MergedAnnotsTextGrid(DoubleAnnotatorTextGrid):
             req_tiers_suffixed = set(name + suffix for name in set(self.checking_scheme.required_tiers_names))
             missing_tiers = req_tiers_suffixed - set(self.textgrid.getNames())
             if missing_tiers:
-                error_log.structural("The tiers %s are missing" % " ,".join(missing_tiers))
+                error_log.log_structural("The tiers %s are missing" % " ,".join(missing_tiers))
             tier_names_set -= req_tiers_suffixed
 
         # filtering out valid tiers to weed out potential invalid tiers names

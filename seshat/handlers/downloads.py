@@ -2,7 +2,7 @@ import io
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from flask import send_file, abort
 from flask_smorest import Blueprint
@@ -63,9 +63,14 @@ class ConflictLogDownloadHandler(AnnotatorMethodView):
 
 @downloads_blp.route("task/<task_id>/textgrids")
 class TaskTextGridListDownload(AdminMethodView):
+    """Download one or several TextGrid for a task. If there's only one
+    TextGrid selected, returns the TextGrid's text file, else, returns
+    a zip archive containing the selected TextGrids."""
 
     @staticmethod
-    def retrieve_file(task: BaseTask, file_name: str):
+    def retrieve_file(task: BaseTask, file_name: str) -> Tuple[bytes, str]:
+        """Retrieves a TextGrid from a task (using file_name as a selector),
+        and returns it as Bytes object"""
         try:
             if isinstance(task.files[file_name], BaseTextGridDocument):
                 data = task.files[file_name].textgrid_file.read()
@@ -78,7 +83,7 @@ class TaskTextGridListDownload(AdminMethodView):
         return data, filename
 
     @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
-    def get(self, task_id: str, names: List[str]):
+    def post(self, task_id: str, names: List[str]):
         task: BaseTask = BaseTask.objects.get(id=task_id)
         if len(names) == 1:
             data, filename = self.retrieve_file(task, names[0])
