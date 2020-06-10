@@ -82,24 +82,22 @@ class TaskTextGridListDownload(AdminMethodView):
 
         return data, filename
 
-    @downloads_blp.arguments(TaskTextGridList, as_kwargs=True)
-    def post(self, task_id: str, names: List[str]):
+    def get(self, task_id: str):
         task: BaseTask = BaseTask.objects.get(id=task_id)
-        if len(names) == 1:
-            data, filename = self.retrieve_file(task, names[0])
-        else:  # build a zip
-            buffer = BytesIO()
-            arch_name = task.data_file + task.TASK_TYPE.replace(" ", "_")
-            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
-                zip_folder: Path = Path(arch_name)
-                for tg_name in names:
-                    tg_archpath = zip_folder / Path(tg_name + ".TextGrid")
-                    tg_doc = task.textgrids[tg_name]
-                    if tg_doc is not None:
-                        zfile.writestr(str(tg_archpath), tg_doc.to_str())
+        # build a zip
+        buffer = BytesIO()
+        data_file = Path(task.data_file).stem
+        task_type = task.TASK_TYPE.replace(' ', '_')
+        arch_name = f"{data_file}_{task_type}"
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
+            zip_folder: Path = Path(arch_name)
+            for tg_name, tg_doc in task.textgrids.items():
+                tg_archpath = zip_folder / Path(tg_name + ".TextGrid")
+                if tg_doc is not None:
+                    zfile.writestr(str(tg_archpath), tg_doc.to_str())
 
-            data = buffer.getvalue()
-            filename = arch_name + ".zip"
+        data = buffer.getvalue()
+        filename = arch_name + ".zip"
 
         return send_file(io.BytesIO(data),
                          as_attachment=True,

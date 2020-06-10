@@ -199,10 +199,7 @@ class Campaign(Document):
         """Generates the full annotations zip archive for that campaign, to be
         then sent to the client"""
         buffer = BytesIO()
-        # TODO: add a summary.csv
-        #   csv should contain (for each task)
-        #   date created, date completed, date started,
-        #   annotators, and optionally the gamma for each tier
+        # TODO: integrate the csv summary generator from above
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
             zip_folder: Path = Path(self.slug)
             for task in self.tasks:
