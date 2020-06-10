@@ -122,6 +122,7 @@ class BaseTask(Document):
         self.__setattr__(tg_name + "_tg", None)
         self.is_done = False
         self.save()
+        self.campaign.update_stats()
 
     @property
     def allow_starter_zip_dl(self) -> bool:

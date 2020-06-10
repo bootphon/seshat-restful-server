@@ -264,7 +264,7 @@ class DoubleAnnotatorTask(BaseTask):
                                                                          self.annotators,
                                                                          self)
 
-        else:
+        elif self.final_tg is None:
             tg = MergedTimesTextGrid.from_textgrid(textgrid, self.annotators, self)
             tg.check()
             if not error_log.has_errors:
@@ -272,9 +272,17 @@ class DoubleAnnotatorTask(BaseTask):
                 self.final_tg = SingleAnnotatorTextGrid.from_textgrid(final_tg, self.annotators, self)
                 self.is_done = True
                 self.finish_time = datetime.now()
-                if self.final_tg is None:
-                    self.notify_done()
-                    self.campaign.update_stats()
+                self.notify_done()
+                self.campaign.update_stats()
+
+        else: # re-submitting a final textgrid
+            tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
+            tg.check()
+            if not error_log.has_errors:
+                # we don't notify since it's already done
+                self.final_tg = tg
+                self.finish_time = datetime.now()
+
 
     def process_target(self, textgrid: str):
         """Handles the submission of a textgrid sent by the target annotator"""
