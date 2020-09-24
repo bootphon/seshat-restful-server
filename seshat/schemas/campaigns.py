@@ -84,6 +84,8 @@ class CampaignStatus(Schema):
     from .users import UserShortProfile
     annotators = fields.List(fields.Nested(UserShortProfile))
     subscribers = fields.List(fields.Str)
+    creation_time = fields.DateTime(required=True)
+    last_update_time = fields.DateTime(required=True)
 
 
 class CampaignWikiPageUpdate(Schema):

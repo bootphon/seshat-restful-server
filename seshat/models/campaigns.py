@@ -237,7 +237,9 @@ class Campaign(Document):
             "tiers_number": len(self.checking_scheme.tiers_specs) if self.checking_scheme is not None else None,
             "check_textgrids": self.check_textgrids,
             "annotators": [annotator.short_profile for annotator in self.annotators],
-            "subscribers": [user.username for user in self.subscribers]
+            "subscribers": [user.username for user in self.subscribers],
+            "creation_time": self.creation_time,
+            "last_update_time": self.last_update,
         }
 
 

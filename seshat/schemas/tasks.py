@@ -60,10 +60,6 @@ class TaskTextGrid(Schema):
     created = fields.DateTime()
 
 
-class TaskTextGridList(Schema):
-    names = fields.List(fields.Str)
-
-
 class TaskComment(Schema):
     from .users import UserShortProfile
     author = fields.Nested(UserShortProfile, required=True)

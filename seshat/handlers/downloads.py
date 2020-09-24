@@ -2,13 +2,12 @@ import io
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import List, Tuple
+from typing import Tuple
 
 from flask import send_file, abort
 from flask_smorest import Blueprint
 
 from .commons import AdminMethodView, AnnotatorMethodView
-from ..schemas.tasks import TaskTextGridList
 from .commons import LoggedInMethodView
 from ..models import BaseTask, Campaign, Annotator, BaseTextGridDocument
 
@@ -129,4 +128,3 @@ class FullAnnotArchiveDownload(AdminMethodView):
                          attachment_filename=campaign.slug + ".zip",
                          as_attachment=True,
                          cache_timeout=0)
-

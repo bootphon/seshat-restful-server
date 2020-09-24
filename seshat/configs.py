@@ -1,12 +1,15 @@
 import os
 from pathlib import Path
 
-from mongoengine import connect
 from dotenv import load_dotenv
+from mongoengine import connect
+
 
 class BaseConfig:
     SUPPORTED_AUDIO_EXTENSIONS = ["wav", "mp3", "ogg", "flac"]
     SMTP_SERVER_PORT = 587
+    API_TITLE = "Seshat API"
+    API_VERSION = "v1"
     OPENAPI_VERSION = "3.0.2"
     OPENAPI_URL_PREFIX = '/doc'
     OPENAPI_REDOC_PATH = '/redoc'
@@ -19,27 +22,20 @@ class BaseConfig:
 
     LOGS_FOLDER = "logs/"
 
-    MONGODB_SETTINGS = {
-        'db': 'seshat_api_dev',
-        'host': '127.0.0.1',
-        'port': 27017}
+    MONGODB_DB = 'seshat_api_dev'
+    MONGODB_HOST = '127.0.0.1'
+    MONGODB_PORT = 27017
 
 
 class DebugConfig(BaseConfig):
     """Debug Flask Config """
 
     # Db Settings
-    MONGODB_SETTINGS = {
-        'db': 'seshat_api_dev',
-        'host': '127.0.0.1',
-        'port': 27017}
+    MONGODB_DB = 'seshat_api_dev'
 
     # Flask settings
     SECRET_KEY = 'Seshat'
     DEBUG = True
-
-    # Flask-User settings
-    USER_APP_NAME = "Seshat API Debug"  # Shown in and email templates and page footers
 
 
 class ProductionConfig(BaseConfig):
@@ -47,13 +43,8 @@ class ProductionConfig(BaseConfig):
     SECRET_KEY = 'Seshat API production'
     DEBUG = False
 
-    # Flask-User settings
-    USER_APP_NAME = "Seshat API"  # Shown in and email templates and page footers
     # Db Settings
-    MONGODB_SETTINGS = {
-        'db': 'seshat_api_prod',
-        'host': '127.0.0.1',
-        'port': 27017}
+    MONGODB_DB = 'seshat_api_prod'
 
 
 class DockerComposeConfig(BaseConfig):
@@ -61,13 +52,10 @@ class DockerComposeConfig(BaseConfig):
     SECRET_KEY = 'Seshat API production'
     DEBUG = False
 
-    # Flask-User settings
-    USER_APP_NAME = "Seshat API"  # Shown in and email templates and page footers
     # Db Settings
-    MONGODB_SETTINGS = {
-        'db': 'seshat_api_prod',
-        'host': 'mongo',
-        'port': 27017}
+    MONGODB_DB = 'seshat_api_prod'
+    MONGODB_HOST = "mongo"
+
 
 config_mapping = {
     "prod": ProductionConfig,
@@ -102,6 +90,9 @@ def get_config(flask_config=None):
 
 def set_up_db(config: BaseConfig):
     """Setting up the database based on a config object"""
-    connect(config.MONGODB_SETTINGS["db"],
-            host=config.MONGODB_SETTINGS["host"],
-            port=config.MONGODB_SETTINGS["port"])
+    # the connect argument makes mongoengine connect lazily to the db,
+    # thus preventing some troubles on app startup when using uwsgi
+    connect(config.MONGODB_DB,
+            host=config.MONGODB_HOST,
+            port=config.MONGODB_PORT,
+            connect=False)

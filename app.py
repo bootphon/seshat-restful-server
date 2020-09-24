@@ -6,7 +6,7 @@ from seshat.configs import get_config, set_up_db
 from seshat.handlers import *
 
 app = Flask('Seshat API', static_url_path='')
-# allowing Cross origin requests
+# allowing Cross origin requests
 CORS(app)
 
 # retrieving the right config, using the FLASK_CONFIG env variable.
@@ -22,7 +22,6 @@ api.register_blueprint(accounts_blp)
 api.register_blueprint(campaigns_blp)
 api.register_blueprint(corpora_blp)
 api.register_blueprint(annotators_blp)
-api.register_blueprint(analytics_blp)
 api.register_blueprint(tasks_blp)
 api.register_blueprint(downloads_blp)
 
