@@ -10,6 +10,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    requirements = f.read().split("\n")
 
 setup(
     name='seshat-server',
@@ -29,6 +31,7 @@ setup(
     ],
     keywords='',
     namespace_packages=['seshat'],
+    install_requires=requirements,
     packages=find_packages(exclude=['docs', 'tests', 'corpora']),
     exclude_package_data={'': ['*.wav']},
     setup_requires=['pytest-runner', 'setuptools>=38.6.0'],  # >38.6.0 needed for markdown README.md
