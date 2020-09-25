@@ -138,8 +138,8 @@ class DoubleAnnotatorTask(BaseTask):
 
     def notify_merged_ready(self, annotator: 'Annotator'):
         notif_dispatch(
-            message=("The other annotator has finished their job on the double-annotation task for file %s"
-                     % self.data_file),
+            message=(f"The other annotator has finished their job on the"
+                     f" double-annotation task for file {self.data_file}"),
             notif_type="finished",
             object_type="task",
             object_id=str(self.id),
@@ -275,14 +275,14 @@ class DoubleAnnotatorTask(BaseTask):
                 self.notify_done()
                 self.campaign.update_stats()
 
-        else: # re-submitting a final textgrid
+        else:  # re-submitting a final textgrid
             tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
             tg.check()
             if not error_log.has_errors:
                 # we don't notify since it's already done
                 self.final_tg = tg
                 self.finish_time = datetime.now()
-
+                self.tiers_gamma = {}
 
     def process_target(self, textgrid: str):
         """Handles the submission of a textgrid sent by the target annotator"""
@@ -364,4 +364,4 @@ class DoubleAnnotatorTask(BaseTask):
 
 
 signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=DoubleAnnotatorTask)
-signals.post_save.connect(BaseTask.post_save, sender=DoubleAnnotatorTask)
+signals.pre_save.connect(BaseTask.pre_save, sender=DoubleAnnotatorTask)
