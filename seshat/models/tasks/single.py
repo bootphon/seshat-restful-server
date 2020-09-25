@@ -68,11 +68,11 @@ class SingleAnnotatorTask(BaseTask):
         tg = SingleAnnotatorTextGrid.from_textgrid(textgrid, self.annotators, self)
         tg.check()
         if not error_log.has_errors:
+            self.is_done = True
             if self.final_tg is None:
                 self.notify_done()
                 self.campaign.update_stats()
             self.final_tg = tg
-            self.is_done = True
             self.finish_time = datetime.now()
 
         self.cascade_save()
