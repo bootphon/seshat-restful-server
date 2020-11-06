@@ -1,14 +1,15 @@
-from mongoengine import DoesNotExist
-import pygamma
-from seshat.models.tasks import DoubleAnnotatorTask
 import tqdm
+from mongoengine import DoesNotExist
 
 from seshat.configs import set_up_db
 from seshat.models import Campaign
+from seshat.models.tasks import DoubleAnnotatorTask
 from .commons import argparser
 
 argparser.add_argument("campaign_slug", type=str, help="Slug for which you want to retrieve the gamma summary")
 argparser.add_argument("--csv", type=str, help="Csv output file")
+argparser.add_argument("-f", "--force", action="store_true",
+                       help="Force recomputation of the gamma value")
 
 
 def main():
@@ -32,12 +33,12 @@ def main():
 
         if task.merged_tg is None:
             print(f"Ref or target textgrids not yet completed for task on file "
-                  f"f{task.data_file.name}, skipping.")
+                  f"{task.data_file}, skipping.")
             continue
 
-        if task.tiers_gamma:
+        if task.tiers_gamma and not args.force:
             print(f"No need to compute gamma for task on file "
-                  f"f{task.data_file.name}, skipping.")
+                  f"{task.data_file}, skipping.")
             continue
 
         task.compute_gamma()
@@ -46,6 +47,10 @@ def main():
     print("Gamma computation is done.")
     campaign.stats.gamma_updating = False
     campaign.update_stats(gamma_only=True)
+    print("Gamma values:")
+    for tier_name, gamma_value in campaign.stats.tiers_gamma.items():
+        print(f"{tier_name} : {gamma_value}")
+
 
 if __name__ == "__main__":
     main()

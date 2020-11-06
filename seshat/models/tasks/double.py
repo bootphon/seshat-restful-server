@@ -360,7 +360,7 @@ class DoubleAnnotatorTask(BaseTask):
                     self.tiers_gamma[tier_name] = gamma_val
 
         if not self.tiers_gamma:
-            raise ValueError("Couldn't compute gamma for ")
+            raise ValueError(f"Couldn't compute gamma for task {str(self.id)}")
 
 
 signals.post_delete.connect(BaseTask.post_delete_cleanup, sender=DoubleAnnotatorTask)

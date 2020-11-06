@@ -3,6 +3,8 @@ from typing import List, Dict, Optional
 
 from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
     EmbeddedDocument
+from pyannote.core import Segment
+from pygamma_agreement import Continuum, CombinedCategoricalDissimilarity, PositionalDissimilarity
 from textgrid import IntervalTier, TextGrid
 
 from .errors import error_log
@@ -45,7 +47,14 @@ class TierScheme(EmbeddedDocument):
         }
 
     def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid) -> Optional[float]:
-        raise NotImplemented()
+        continuum = Continuum()
+        for annot in ref_tg.getFirst(self.name):
+            continuum.add("ref", Segment(annot.minTime, annot.maxTime))
+        for annot in target_tg.getFirst(self.name):
+            continuum.add("target", Segment(annot.minTime, annot.maxTime))
+        dissim = PositionalDissimilarity(delta_empty=1)
+        gamma_results = continuum.compute_gamma(dissim, n_samples=10, precision_level="medium")
+        return gamma_results.gamma
 
 
 class UnCheckedTier(TierScheme):
@@ -55,9 +64,6 @@ class UnCheckedTier(TierScheme):
         for i, annot in enumerate(tier):
             if not self.allow_empty and annot.mark.strip() == "":
                 error_log.log_annot(tier.name, i, annot, "Empty annotations are not authorized in this tier")
-
-    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid):
-        return None
 
 
 class CategoricalTier(TierScheme):
@@ -72,7 +78,17 @@ class CategoricalTier(TierScheme):
         return {**super().to_specs(), "categories": self.categories}
 
     def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid):
-        return 0.5 # TODO
+        continuum = Continuum()
+        for annot in ref_tg.getFirst(self.name):
+            continuum.add("ref", Segment(annot.minTime, annot.maxTime),
+                          annot.mark)
+        for annot in target_tg.getFirst(self.name):
+            continuum.add("target", Segment(annot.minTime, annot.maxTime),
+                          annot.mark)
+        dissim = CombinedCategoricalDissimilarity(list(continuum.categories),
+                                                  alpha=1, beta=1)
+        gamma_results = continuum.compute_gamma(dissim, n_samples=10, precision_level="medium")
+        return gamma_results.gamma
 
 
 class ParsedTier(TierScheme):
@@ -89,9 +105,6 @@ class ParsedTier(TierScheme):
 
     def to_specs(self):
         return {**super().to_specs(), "parser": {"name": self.parser_name, "module": self.parser_module}}
-
-    def compute_gamma(self, ref_tg: TextGrid, target_tg: TextGrid) -> Optional[float]:
-        return 0.6 # TODO
 
 
 class TextGridCheckingScheme(Document):

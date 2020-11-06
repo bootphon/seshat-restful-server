@@ -78,7 +78,7 @@ class CampaignStats(EmbeddedDocument):
                     for tier_name, gamma_value in task.tiers_gamma.items():
                         tiers_gamma[tier_name].append(gamma_value)
             # TODO: computing mean gamma for each tier, can be changed?
-            for tier_name, gamma_values in tiers_gamma:
+            for tier_name, gamma_values in tiers_gamma.items():
                 self.tiers_gamma[tier_name] = mean(gamma_values)
 
     def to_msg(self):

@@ -12,3 +12,4 @@ build/
 .eggs/
 dist/
 *__pycache__*
+.env
