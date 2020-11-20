@@ -82,6 +82,7 @@ class TaskTextGridListDownload(AdminMethodView):
         return data, filename
 
     def get(self, task_id: str):
+        """Retrieve a tasks's textgrid files."""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         # build a zip
         buffer = BytesIO()
@@ -126,5 +127,19 @@ class FullAnnotArchiveDownload(AdminMethodView):
 
         return send_file(io.BytesIO(campaign.get_full_annots_archive()),
                          attachment_filename=campaign.slug + ".zip",
+                         as_attachment=True,
+                         cache_timeout=0)
+
+
+@downloads_blp.route("campaign/gamma_csv/<campaign_slug>")
+class GammaAnalyticsDownload(AdminMethodView):
+
+    def get(self, campaign_slug: str):
+        """Download a campaign's csv gamma data for double annotation task"""
+        campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
+        gamma_csv = campaign.gen_summary_csv(only_gamma=True)
+
+        return send_file(io.BytesIO(gamma_csv.encode()),
+                         attachment_filename=f"{campaign_slug}_gamma.csv",
                          as_attachment=True,
                          cache_timeout=0)

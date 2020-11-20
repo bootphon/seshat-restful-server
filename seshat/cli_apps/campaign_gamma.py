@@ -7,9 +7,13 @@ from seshat.models.tasks import DoubleAnnotatorTask
 from .commons import argparser
 
 argparser.add_argument("campaign_slug", type=str, help="Slug for which you want to retrieve the gamma summary")
-argparser.add_argument("--csv", type=str, help="Csv output file")
-argparser.add_argument("-f", "--force", action="store_true",
+exclusive_group = argparser.add_mutually_exclusive_group()
+compute = exclusive_group.add_argument_group()
+compute.add_argument("--csv", type=str, help="Csv output file")
+compute.add_argument("-f", "--force", action="store_true",
                        help="Force recomputation of the gamma value")
+exclusive_group.add_argument("--clear", action="store_true",
+                             help="Clear the computed gamma values for that campaign")
 
 
 def main():
@@ -21,6 +25,17 @@ def main():
     except DoesNotExist:
         print("Cannot find campaign with slug %s" % args.campaign_slug)
         exit(1)
+
+    if args.clear:
+        for task in campaign.tasks:
+            if isinstance(task, DoubleAnnotatorTask):
+                task.tiers_gamma = None
+                task.save()
+        campaign.stats.tiers_gamma = None
+        campaign.update_stats()
+        print("Cleared all gamma values")
+        exit()
+
 
     if not campaign.stats.can_compute_gamma:
         print(f"It's not possible to compute the gamma agreement for campaign"

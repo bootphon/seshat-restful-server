@@ -27,7 +27,7 @@ class BaseConfig:
     MONGODB_PORT = 27017
 
 
-class DebugConfig(BaseConfig):
+class DevConfig(BaseConfig):
     """Debug Flask Config """
 
     # Db Settings
@@ -60,7 +60,7 @@ class DockerComposeConfig(BaseConfig):
 config_mapping = {
     "prod": ProductionConfig,
     "docker": DockerComposeConfig,
-    "dev": DebugConfig
+    "dev": DevConfig
 }
 
 

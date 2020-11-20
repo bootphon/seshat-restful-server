@@ -1,20 +1,20 @@
-from typing import Dict, List
+from typing import Dict
 
 import slugify
 from flask_smorest import Blueprint, abort
 from mongoengine import ValidationError, NotUniqueError
 
+from .commons import AdminMethodView
+from .commons import LoggedInMethodView
 from ..models import BaseCorpus
+from ..models.campaigns import Campaign
 from ..models.tg_checking import TextGridCheckingScheme, ParsedTier
 from ..parsers import list_parsers
 from ..parsers.base import AnnotationError
+from ..schemas.campaigns import CampaignCreation, CampaignStatus, CampaignWikiPage
 from ..schemas.campaigns import CampaignSlug, CampaignEditSchema, CampaignSubscriptionUpdate, \
     CampaignWikiPageUpdate, CheckingSchemeSummary, TierQuickCheck, QuickCheckResponse, ParserClass
 from ..schemas.tasks import TaskShortStatus
-from .commons import AdminMethodView
-from .commons import LoggedInMethodView
-from ..models.campaigns import Campaign
-from ..schemas.campaigns import CampaignCreation, CampaignStatus, CampaignWikiPage
 
 campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
                           description="Operations to display and create campaigns")
@@ -25,6 +25,7 @@ class AvailableParsersHandler(AdminMethodView):
 
     @campaigns_blp.response(ParserClass(many=True))
     def get(self):
+        """List installed custom parsers"""
         parsers = []
         for mod_name, parsers_dict in list_parsers().items():
             for parser_name, parser_class in parsers_dict.items():
@@ -117,6 +118,7 @@ class ViewCampaignHandler(AdminMethodView):
 
 @campaigns_blp.route("list/tasks/<campaign_slug>")
 class ListCampaignTasksHandler(AdminMethodView):
+    """Retrieve a summary of all of a campaign's tasks"""
 
     @campaigns_blp.response(TaskShortStatus(many=True))
     def get(self, campaign_slug: str):
@@ -139,7 +141,9 @@ class WikiUpdateHandler(AdminMethodView):
 
 @campaigns_blp.route("gamma/update/<campaign_slug>")
 class UpdateGammaHandler(LoggedInMethodView):
+    """Ask for a gamma computation update."""
 
+    @campaigns_blp.response(code=200)
     def post(self, campaign_slug: str):
         """Launch a campaign's gamma computation"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -181,19 +185,21 @@ class CampaignCheckingScheme(LoggedInMethodView):
     @campaigns_blp.response(CheckingSchemeSummary)
     @campaigns_blp.response(code=200)
     def get(self, campaign_slug: str):
+        """Structured summary of all a campaign's textgrid checking scheme"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         if campaign.check_textgrids and campaign.checking_scheme is not None:
             return campaign.checking_scheme.summary
         else:
-            return # nothing is returned
+            return  # nothing is returned
 
 
 @campaigns_blp.route("/checking_scheme/list")
-class CampaignCheckingScheme(LoggedInMethodView):
+class ListTextGridCheckingSchemes(LoggedInMethodView):
 
     @campaigns_blp.response(CheckingSchemeSummary(many=True))
     @campaigns_blp.response(code=200)
     def get(self):
+        """Lists all the textgrid checking schemes already available"""
         for campaign in Campaign.objects:
             if campaign.check_textgrids and campaign.checking_scheme is not None:
                 yield campaign.checking_scheme.summary
@@ -205,6 +211,9 @@ class ParsedTierQuickCheck(LoggedInMethodView):
     @campaigns_blp.arguments(TierQuickCheck, as_kwargs=True)
     @campaigns_blp.response(QuickCheckResponse)
     def post(self, campaign_slug: str, tier_name: str, annotation: str):
+        """Check if a single annotation of a parsed tier is valid.
+        Used when annotators want to check if an annotation is valid without
+        having to submit the full file."""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
         if not campaign.check_textgrids:
             abort(403, message="No checking scheme for that campaign")

@@ -166,7 +166,7 @@ class Campaign(Document):
             tg = self.checking_scheme.gen_template_tg(audio_file.duration, filename)
         return SingleAnnotatorTextGrid.from_textgrid(tg, [self.creator], None)
 
-    def gen_summary_csv(self) -> str:
+    def gen_summary_csv(self, only_gamma = False) -> str:
         str_io = StringIO()
         fields = ["task_file", "time_created", "time_completed", "time_started",
                   "annotators"]
@@ -191,6 +191,11 @@ class Campaign(Document):
             if isinstance(task, DoubleAnnotatorTask) and write_gamma:
                 for tier_name, gamma in task.tiers_gamma.items():
                     task_row[f"gamma_{tier_name}"] = gamma
+
+            # if we only want the gamma rows, skipping single annotators tasks
+            if only_gamma and not isinstance(task, DoubleAnnotatorTask):
+                continue
+
             csv_writer.writerow(task_row)
         str_io.flush()
         return str_io.getvalue()
@@ -202,6 +207,12 @@ class Campaign(Document):
         # TODO: integrate the csv summary generator from above
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_STORED) as zfile:
             zip_folder: Path = Path(self.slug)
+
+            # writing full summary
+            summary_path = zip_folder / Path("summary.csv")
+            zfile.writestr(str(summary_path), self.gen_summary_csv())
+
+            # then writing tasks textgrids and per-task summary
             for task in self.tasks:
                 task_annotators = "-".join([annotator.username
                                             for annotator in task.annotators])

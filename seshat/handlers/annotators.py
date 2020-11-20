@@ -66,6 +66,7 @@ class AnnotatorChangePasswordHandler(AdminMethodView):
     @annotators_blp.arguments(AnnotatorPasswordChange, as_kwargs=True)
     @annotators_blp.response(code=200)
     def post(self, username: str, password: str):
+        """Change an annotator's password"""
         if len(password) < 8:
             abort(403, message="Password has to be longer")
         annotator: Annotator = Annotator.objects.get(username=username)
@@ -90,6 +91,7 @@ class AnnotatorTasksHandler(AdminMethodView):
 
     @annotators_blp.response(TaskShortStatus(many=True))
     def get(self, username: str):
+        """List task assigned to an annotator"""
         annotator: Annotator = Annotator.objects.get(username=username)
         return [task.short_status for task in annotator.assigned_tasks]
 

@@ -47,6 +47,7 @@ class UserDataHandler(LoggedInMethodView):
 
     @accounts_blp.response(UserShortProfile)
     def get(self):
+        """Retrieve a user's profile data"""
         return self.user.short_profile
 
 
@@ -82,4 +83,5 @@ class NotificationsCountHandler(LoggedInMethodView):
 
     @accounts_blp.response(NotificationsCount)
     def get(self):
+        """Retrieve just the number of active notifications"""
         return {'count': len(self.user.pending_notifications)}
