@@ -6,7 +6,7 @@ from statistics import mean
 from typing import Tuple, Set
 from typing import Union, List
 
-from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField, BooleanField
+from mongoengine import Document, ReferenceField, ListField, FileField, DateTimeField
 from textgrid import Interval, TextGrid, IntervalTier
 
 from .errors import error_log
@@ -78,6 +78,9 @@ class BaseTextGridDocument(Document):
 
 class LoggedTextGrid(BaseTextGridDocument):
     meta = {"collection": "logged_textgrid"}
+
+
+# TODO: idea : add a class EafTextGrid which overrides some fields
 
 
 class SingleAnnotatorTextGrid(BaseTextGridDocument):
