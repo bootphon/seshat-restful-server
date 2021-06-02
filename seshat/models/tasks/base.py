@@ -7,7 +7,7 @@ from typing import Dict, Optional, List
 
 from flask import current_app
 from mongoengine import EmbeddedDocument, ReferenceField, DateTimeField, StringField, BooleanField, Document, \
-    EmbeddedDocumentListField, DateField, Q, ValidationError
+    EmbeddedDocumentListField, DateField, Q, ValidationError, DoesNotExist
 from mongoengine import (PULL, NULLIFY, signals)
 
 from ..commons import notif_dispatch
@@ -85,7 +85,10 @@ class BaseTask(Document):
         """Removing notifications affiliated to that task"""
         from ..users import Notification
         Notification.objects(Q(object_id=str(document.id)) & Q(object_type="task")).delete()
-        document.campaign.update_stats()
+        try:
+            document.campaign.update_stats()
+        except DoesNotExist:
+            pass
 
     @classmethod
     def pre_save(cls, sender, document: 'BaseTask', **kwargs):
