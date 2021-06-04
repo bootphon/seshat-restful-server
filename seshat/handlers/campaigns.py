@@ -42,12 +42,16 @@ class CampaignAdminHandler(AdminMethodView):
         """Creates a new campaign"""
         if args["check_textgrids"]:
             if args.get("checking_scheme_id") is not None:
-                checking_scheme = TextGridCheckingScheme.objects.get(args["checking_scheme_id"])
+                checking_scheme = TextGridCheckingScheme.objects.get(id=args["checking_scheme_id"])
             else:
+                if not args.get("checking_scheme_name"):
+                    checking_scheme_name = f"{args['name']} Campaign Scheme"
+                else:
+                    checking_scheme_name = args["checking_scheme_name"]
                 try:
                     checking_scheme = TextGridCheckingScheme.from_tierspecs_schema(
                         scheme_data=args["checking_scheme"],
-                        scheme_name=args["name"])
+                        scheme_name=checking_scheme_name)
                     checking_scheme.validate()
                 except ValidationError as e:
                     return abort(403, message="Invalid tier specifications : %s" % str(e))
@@ -200,9 +204,7 @@ class ListTextGridCheckingSchemes(LoggedInMethodView):
     @campaigns_blp.response(code=200)
     def get(self):
         """Lists all the textgrid checking schemes already available"""
-        for campaign in Campaign.objects:
-            if campaign.check_textgrids and campaign.checking_scheme is not None:
-                yield campaign.checking_scheme.summary
+        return [checking_scheme.summary for checking_scheme in TextGridCheckingScheme.objects]
 
 
 @campaigns_blp.route("/quickcheck/<campaign_slug>")

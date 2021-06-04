@@ -36,6 +36,7 @@ class CampaignCreation(Schema):
     checking_scheme = fields.List(fields.Nested(TierSpecifications))
     # Used when "importing" a TCS from another campaign
     checking_scheme_id = fields.Str()
+    checking_scheme_name = fields.Str()
 
     @validates_schema
     def validate_data_fields(self, data, **kwargs):
