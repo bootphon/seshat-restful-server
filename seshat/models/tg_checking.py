@@ -4,7 +4,8 @@ from typing import List, Dict, Optional
 from mongoengine import Document, StringField, EmbeddedDocumentField, BooleanField, ListField, MapField, \
     EmbeddedDocument
 from pyannote.core import Segment
-from pygamma_agreement import Continuum, CombinedCategoricalDissimilarity, PositionalDissimilarity
+from pygamma_agreement import Continuum, CombinedCategoricalDissimilarity, PositionalSporadicDissimilarity, \
+    CategoricalDissimilarity, AbsoluteCategoricalDissimilarity
 from textgrid import IntervalTier, TextGrid
 
 from .errors import error_log
@@ -52,7 +53,7 @@ class TierScheme(EmbeddedDocument):
             continuum.add("ref", Segment(annot.minTime, annot.maxTime))
         for annot in target_tg.getFirst(self.name):
             continuum.add("target", Segment(annot.minTime, annot.maxTime))
-        dissim = PositionalDissimilarity(delta_empty=1)
+        dissim = PositionalSporadicDissimilarity(delta_empty=1)
         gamma_results = continuum.compute_gamma(dissim, n_samples=10, precision_level="medium")
         return gamma_results.gamma
 
@@ -85,8 +86,7 @@ class CategoricalTier(TierScheme):
         for annot in target_tg.getFirst(self.name):
             continuum.add("target", Segment(annot.minTime, annot.maxTime),
                           annot.mark)
-        dissim = CombinedCategoricalDissimilarity(list(continuum.categories),
-                                                  alpha=1, beta=1)
+        dissim = CombinedCategoricalDissimilarity(alpha=1, beta=1)
         gamma_results = continuum.compute_gamma(dissim, n_samples=10, precision_level="medium")
         return gamma_results.gamma
 

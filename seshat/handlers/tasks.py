@@ -17,7 +17,7 @@ tasks_blp = Blueprint("tasks", __name__, url_prefix="/tasks",
 @tasks_blp.route("/list/assigned")
 class ListAssignedTasksHandler(AnnotatorMethodView):
 
-    @tasks_blp.response(TaskShortStatus(many=True))
+    @tasks_blp.response(200, schema=TaskShortStatus(many=True))
     def get(self):
         """Lists all tasks assigned to the currently logged-in annotator"""
         return [task.short_status for task in self.user.assigned_tasks]
@@ -27,7 +27,7 @@ class ListAssignedTasksHandler(AnnotatorMethodView):
 class AssignTasksHandler(AdminMethodView):
 
     @tasks_blp.arguments(TasksAssignment)
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def post(self, args: Dict):
         """Assign annotating tasks (linked to an audio file) to annotators"""
         campaign = Campaign.objects.get(slug=args["campaign"])
@@ -68,7 +68,7 @@ class AssignTasksHandler(AdminMethodView):
 @tasks_blp.route("delete/<task_id>")
 class DeleteTaskHandler(AdminMethodView):
 
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def delete(self, task_id: str):
         """Delete an assigned task"""
         BaseTask.objects.get(id=task_id).delete()
@@ -78,7 +78,7 @@ class DeleteTaskHandler(AdminMethodView):
 class DeleteTasksListHandler(AdminMethodView):
 
     @tasks_blp.arguments(TaskIdsList, as_kwargs=True)
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def delete(self, task_ids: List[str]):
         """Delete an assigned task"""
         BaseTask.objects(id__in=task_ids).delete()
@@ -87,7 +87,7 @@ class DeleteTasksListHandler(AdminMethodView):
 @tasks_blp.route("delete/<task_id>/textgrid/<tg_name>")
 class DeleteTaskTextGridHandler(AdminMethodView):
 
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def delete(self, task_id: str, tg_name: str):
         """Delete an assigned task"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
@@ -98,7 +98,7 @@ class DeleteTaskTextGridHandler(AdminMethodView):
 class LockTaskHandler(AdminMethodView):
 
     @tasks_blp.arguments(TaskLockRequest, as_kwargs=True)
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def post(self, task_id: str, lock_status: bool):
         """Lock a task, preventing a user from making any change to it"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
@@ -109,7 +109,7 @@ class LockTaskHandler(AdminMethodView):
 @tasks_blp.route("/status/admin/<task_id>")
 class GetAdminTaskDataHandler(AdminMethodView):
 
-    @tasks_blp.response(TaskFullStatusAdmin)
+    @tasks_blp.response(200, schema=TaskFullStatusAdmin)
     def get(self, task_id: str):
         """Returns the full task status for the admin task view"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
@@ -119,7 +119,7 @@ class GetAdminTaskDataHandler(AdminMethodView):
 @tasks_blp.route("/status/annotator/<task_id>")
 class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 
-    @tasks_blp.response(TaskFullStatusAnnotator)
+    @tasks_blp.response(200, schema=TaskFullStatusAnnotator)
     def get(self, task_id: str):
         """Returns the annotator's task status, for the annotator task view"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
@@ -130,7 +130,7 @@ class GetAnnotatorTaskDataHandler(AnnotatorMethodView):
 class SubmitTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission, as_kwargs=True)
-    @tasks_blp.response(TextGridErrors)
+    @tasks_blp.response(200, schema=TextGridErrors)
     def post(self, task_id: str, textgrid_str: str):
         """Textgrid submission handler"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
@@ -150,7 +150,7 @@ class SubmitTaskFileHandler(AnnotatorMethodView):
 class ValidateTaskFileHandler(AnnotatorMethodView):
 
     @tasks_blp.arguments(TaskTextgridSubmission, as_kwargs=True)
-    @tasks_blp.response(TextGridErrors)
+    @tasks_blp.response(200, schema=TextGridErrors)
     def post(self, task_id: str, textgrid_str: str):
         """Submits a textgrid to a task. The task will figure out by itself
         the current step it's supposed to belong to, and return any validation error"""
@@ -167,14 +167,14 @@ class ValidateTaskFileHandler(AnnotatorMethodView):
 @tasks_blp.route("/comment/<task_id>")
 class TaskCommentHandler(LoggedInMethodView):
 
-    @tasks_blp.response(TaskComment(many=True))
+    @tasks_blp.response(200, schema=TaskComment(many=True))
     def get(self, task_id: str):
         """Retrieves the list of comments for a task"""
         task: BaseTask = BaseTask.objects.get(id=task_id)
         return [comment.to_msg for comment in task.discussion]
 
     @tasks_blp.arguments(TaskCommentSubmission, as_kwargs=True)
-    @tasks_blp.response(code=200)
+    @tasks_blp.response(200)
     def post(self, content: str, task_id: str):
         """Adds a comment to a task"""
         task: BaseTask = BaseTask.objects.get(id=task_id)

@@ -89,7 +89,7 @@ class DoubleAnnotatorData(Schema):
     reference = fields.Nested(UserShortProfile, required=True)
     target = fields.Nested(UserShortProfile, required=True)
     current_user_role = fields.Str(required=True)
-    #  This field is optional because it's only filled in a double annotator task
+    # This field is optional because it's only filled in a double annotator task
     frontiers_merge_table = fields.List(fields.Nested(TimeMergeError))
 
 

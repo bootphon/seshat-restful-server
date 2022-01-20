@@ -23,7 +23,7 @@ campaigns_blp = Blueprint("campaigns", __name__, url_prefix="/campaigns",
 @campaigns_blp.route("parsers/list/")
 class AvailableParsersHandler(AdminMethodView):
 
-    @campaigns_blp.response(ParserClass(many=True))
+    @campaigns_blp.response(200, schema=ParserClass(many=True))
     def get(self):
         """List installed custom parsers"""
         parsers = []
@@ -37,7 +37,7 @@ class AvailableParsersHandler(AdminMethodView):
 class CampaignAdminHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignCreation)
-    @campaigns_blp.response(CampaignSlug, code=200)
+    @campaigns_blp.response(200, schema=CampaignSlug)
     def post(self, args: Dict):
         """Creates a new campaign"""
         if args["check_textgrids"]:
@@ -86,14 +86,14 @@ class CampaignAdminHandler(AdminMethodView):
             abort(403, f"Invalid campaign specifications : {str(e)}")
 
     @campaigns_blp.arguments(CampaignSlug, as_kwargs=True)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200)
     def delete(self, slug: str):
         """Delete a campaign"""
         campaign: Campaign = Campaign.objects.get(slug=slug)
         campaign.delete()
 
     @campaigns_blp.arguments(CampaignEditSchema, as_kwargs=True)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200)
     def put(self, slug, **kwargs):
         """Update a campaign"""
         campaign: Campaign = Campaign.objects.get(slug=slug)
@@ -104,7 +104,7 @@ class CampaignAdminHandler(AdminMethodView):
 @campaigns_blp.route("list/")
 class ListCampaignsHandler(AdminMethodView):
 
-    @campaigns_blp.response(CampaignStatus(many=True))
+    @campaigns_blp.response(200, schema=CampaignStatus(many=True))
     def get(self):
         """List all created campaigns, in summary form"""
         return [campaign.status for campaign in Campaign.objects]
@@ -113,7 +113,7 @@ class ListCampaignsHandler(AdminMethodView):
 @campaigns_blp.route("view/<campaign_slug>")
 class ViewCampaignHandler(AdminMethodView):
 
-    @campaigns_blp.response(CampaignStatus)
+    @campaigns_blp.response(200, schema=CampaignStatus)
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -124,7 +124,7 @@ class ViewCampaignHandler(AdminMethodView):
 class ListCampaignTasksHandler(AdminMethodView):
     """Retrieve a summary of all of a campaign's tasks"""
 
-    @campaigns_blp.response(TaskShortStatus(many=True))
+    @campaigns_blp.response(200, schema=TaskShortStatus(many=True))
     def get(self, campaign_slug: str):
         """Returns the full campaign data"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -135,7 +135,7 @@ class ListCampaignTasksHandler(AdminMethodView):
 class WikiUpdateHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignWikiPageUpdate, as_kwargs=True)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200)
     def post(self, content: str, campaign_slug: str):
         """Update the campaign's wiki page"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -147,7 +147,7 @@ class WikiUpdateHandler(AdminMethodView):
 class UpdateGammaHandler(LoggedInMethodView):
     """Ask for a gamma computation update."""
 
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200)
     def post(self, campaign_slug: str):
         """Launch a campaign's gamma computation"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -157,7 +157,7 @@ class UpdateGammaHandler(LoggedInMethodView):
 @campaigns_blp.route("wiki/view/<campaign_slug>")
 class WikiViewHandler(LoggedInMethodView):
 
-    @campaigns_blp.response(CampaignWikiPage)
+    @campaigns_blp.response(200, schema=CampaignWikiPage)
     def get(self, campaign_slug: str):
         """View a campaign's wiki page"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -169,7 +169,7 @@ class WikiViewHandler(LoggedInMethodView):
 class CampaignSubscriptionHandler(AdminMethodView):
 
     @campaigns_blp.arguments(CampaignSubscriptionUpdate, as_kwargs=True)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200)
     def post(self, slug: str, subscription_status: bool):
         """Subscribes or unsubscribes an admin from a campaign"""
         campaign: Campaign = Campaign.objects.get(slug=slug)
@@ -186,8 +186,8 @@ class CampaignSubscriptionHandler(AdminMethodView):
 @campaigns_blp.route("/checking_scheme/<campaign_slug>")
 class CampaignCheckingScheme(LoggedInMethodView):
 
-    @campaigns_blp.response(CheckingSchemeSummary)
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200, schema=CheckingSchemeSummary)
+    @campaigns_blp.response(200)
     def get(self, campaign_slug: str):
         """Structured summary of all a campaign's textgrid checking scheme"""
         campaign: Campaign = Campaign.objects.get(slug=campaign_slug)
@@ -200,8 +200,7 @@ class CampaignCheckingScheme(LoggedInMethodView):
 @campaigns_blp.route("/checking_scheme/list")
 class ListTextGridCheckingSchemes(LoggedInMethodView):
 
-    @campaigns_blp.response(CheckingSchemeSummary(many=True))
-    @campaigns_blp.response(code=200)
+    @campaigns_blp.response(200, schema=CheckingSchemeSummary(many=True))
     def get(self):
         """Lists all the textgrid checking schemes already available"""
         return [checking_scheme.summary for checking_scheme in TextGridCheckingScheme.objects]
@@ -211,7 +210,7 @@ class ListTextGridCheckingSchemes(LoggedInMethodView):
 class ParsedTierQuickCheck(LoggedInMethodView):
 
     @campaigns_blp.arguments(TierQuickCheck, as_kwargs=True)
-    @campaigns_blp.response(QuickCheckResponse)
+    @campaigns_blp.response(200, schema=QuickCheckResponse)
     def post(self, campaign_slug: str, tier_name: str, annotation: str):
         """Check if a single annotation of a parsed tier is valid.
         Used when annotators want to check if an annotation is valid without

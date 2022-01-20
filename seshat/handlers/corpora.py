@@ -11,7 +11,7 @@ corpora_blp = Blueprint("corpora", __name__, url_prefix="/corpora",
 @corpora_blp.route("/list/all")
 class ListCorporaHandler(AdminMethodView):
 
-    @corpora_blp.response(CorpusShortSummary(many=True))
+    @corpora_blp.response(200, schema=CorpusShortSummary(many=True))
     def get(self):
         """List all available corpora"""
         return [corpus.short_summary for corpus in BaseCorpus.objects]
@@ -20,7 +20,7 @@ class ListCorporaHandler(AdminMethodView):
 @corpora_blp.route("/list/<corpus_name>")
 class ListCorpusFilesHandler(AdminMethodView):
 
-    @corpora_blp.response(CorpusFullSummary)
+    @corpora_blp.response(200, schema=CorpusFullSummary)
     def get(self, corpus_name: str):
         """List all the files for an available corpora"""
         corpus: BaseCorpus = BaseCorpus.objects.get(name=corpus_name)
@@ -30,7 +30,7 @@ class ListCorpusFilesHandler(AdminMethodView):
 @corpora_blp.route("/list/for/<campaign_slug>")
 class ListCampaignCorpusFilesHandler(AdminMethodView):
 
-    @corpora_blp.response(CorpusFullSummary)
+    @corpora_blp.response(200, schema=CorpusFullSummary)
     def get(self, campaign_slug: str):
         """List a corpus files relative to a campaign (with the count of tasks
         already assigned to that file)"""
@@ -45,7 +45,7 @@ class ListCampaignCorpusFilesHandler(AdminMethodView):
 @corpora_blp.route("/refresh")
 class RefreshCorporaHandler(AdminMethodView):
 
-    @corpora_blp.response(code=200)
+    @corpora_blp.response(200)
     def get(self):
         """Ask the server to refresh the existing corpus list from the
         corpus folder"""
@@ -72,7 +72,7 @@ class RefreshCorporaHandler(AdminMethodView):
 @corpora_blp.route("/refresh/<corpus_name>")
 class RefreshCorpusListingHandler(AdminMethodView):
 
-    @corpora_blp.response(code=200)
+    @corpora_blp.response(200)
     def get(self, corpus_name: str):
         """Ask the server to update the corpus files list from the corpus's
         folder or CSV file."""

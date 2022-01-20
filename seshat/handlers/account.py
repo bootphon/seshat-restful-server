@@ -25,7 +25,7 @@ class HttpErrorCode(Schema):
 class LoginHandler(MethodView):
 
     @accounts_blp.arguments(LoginCredentials)
-    @accounts_blp.response(ConnectionToken)
+    @accounts_blp.response(200, schema=ConnectionToken)
     def post(self, args):
         """Log in to the account. Returns the connection token"""
         user = User.objects(Q(username=args["login"]) | Q(email=args["login"])).first()
@@ -45,7 +45,7 @@ class LoginHandler(MethodView):
 @accounts_blp.route("/data")
 class UserDataHandler(LoggedInMethodView):
 
-    @accounts_blp.response(UserShortProfile)
+    @accounts_blp.response(200, schema=UserShortProfile)
     def get(self):
         """Retrieve a user's profile data"""
         return self.user.short_profile
@@ -54,7 +54,7 @@ class UserDataHandler(LoggedInMethodView):
 @accounts_blp.route("/logout")
 class LogoutHandler(LoggedInMethodView):
 
-    @accounts_blp.response(code=200)
+    @accounts_blp.response(200)
     def post(self):
         """Log out form the server. Flushes the annotator's cookie"""
         self.user.delete_token()
@@ -63,13 +63,13 @@ class LogoutHandler(LoggedInMethodView):
 @accounts_blp.route("/notifications")
 class NotificationsHandler(LoggedInMethodView):
 
-    @accounts_blp.response(NotificationData(many=True))
+    @accounts_blp.response(200, schema=NotificationData(many=True))
     def get(self):
         """Retrieve the user's notifications"""
         return [notif.to_msg() for notif in self.user.pending_notifications]
 
     @accounts_blp.arguments(NotificationDelete)
-    @accounts_blp.response(code=200)
+    @accounts_blp.response(200)
     def delete(self, args):
         """Delete a user's notification"""
         notif: Notification = Notification.objects.get(id=args["notif_id"])
@@ -81,7 +81,7 @@ class NotificationsHandler(LoggedInMethodView):
 @accounts_blp.route("/notifications/count")
 class NotificationsCountHandler(LoggedInMethodView):
 
-    @accounts_blp.response(NotificationsCount)
+    @accounts_blp.response(200, schema=NotificationsCount)
     def get(self):
         """Retrieve just the number of active notifications"""
         return {'count': len(self.user.pending_notifications)}
