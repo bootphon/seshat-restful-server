@@ -39,7 +39,7 @@ setup(
     entry_points={
         'console_scripts': [
             'add-manager = seshat.cli_apps.add_manager:main',
-            'change-password = seshat.cli_apps.check_password:main',
+            'change-password = seshat.cli_apps.change_password:main',
             'check-parser = seshat.cli_apps.check_parser:main',
             'check-corpus = seshat.cli_apps.check_corpus:main',
             'check-textgrid = seshat.cli_apps.check_textgrid:main',
